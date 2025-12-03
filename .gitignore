@@ -21,3 +21,18 @@ venv/
 # Ignore example output files
 organized_folder/
 operation_log.txt
+
+# Node.js dependencies
+node_modules/
+
+# Frontend build output
+frontend/dist/
+frontend/.vite/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# User configuration (may contain sensitive data)
+user_config.json

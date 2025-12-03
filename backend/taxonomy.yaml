@@ -1,0 +1,273 @@
+# =============================================================================
+# SABRINA TAXONOMY RULES
+# =============================================================================
+#
+# FOUR-LEVEL SPINE:
+#   Level 0: Namespace (KB) - Reserved for curated, Sabrina-aware knowledge
+#   Level 1: Domain (KB.<Domain>) - Big, stable life/work area (rarely changes)
+#   Level 2: Workspace/Scope (KB.<Domain>.<Scope>) - Main classification target
+#   Level 3: Subpaths - Local organization (year, institution, project)
+#   Level 4: Item - Individual file with name, timestamps, source metadata
+#
+# TESTS FOR NEW WORKSPACE (all must pass):
+#   1. CLARITY: "This workspace is for ___" (one sentence)
+#   2. DECISION: Supports a recurring decision type
+#   3. VOLUME: 10+ items expected
+#   4. SEPARATION: Merging into neighbor would lose clarity
+#
+# ROUTING PRIORITY:
+#   1. Use existing Workspace (even if format/source is new)
+#   2. Use subpath within existing Workspace for sub-slices
+#   3. Only create new Workspace when cluster has no comfortable home
+#
+# ANTI-PATTERNS:
+#   - Don't encode source in Scope name (no KB.Finance.Substack)
+#   - Don't encode time in Scope name (use subpaths for years)
+#   - Don't duplicate categories; use search/tags for cross-cutting views
+#
+# GOVERNANCE:
+#   - Domains: Frozen (almost never change)
+#   - Scopes: Change occasionally with justification
+#   - Subpaths: Flexible, refactor freely
+#
+# VERSION: 1.0
+# LAST UPDATED: December 2025
+# =============================================================================
+
+version: "1.0"
+
+workspaces:
+  # ==========================================================================
+  # KB.Personal.* - Personal life administration
+  # ==========================================================================
+  - id: KB.Personal.Identity
+    description: "Identity and vital records (birth cert, SSN, IDs, passport, immigration)."
+    naming:
+      prefix: "ID"
+      components: ["doc_type", "person", "year"]
+      format: "{prefix}-{doc_type}-{person}-{year}"
+      examples:
+        - "ID-Passport-JeffM-2025.pdf"
+        - "ID-DriversLicense-JeffM-2024.pdf"
+
+  - id: KB.Personal.Family
+    description: "Marriage, divorce, child custody, prenups, adoption, family legal docs."
+    naming:
+      prefix: "FAM"
+      components: ["doc_type", "year"]
+      format: "{prefix}-{doc_type}-{year}"
+      examples:
+        - "FAM-MarriageCert-2020.pdf"
+
+  - id: KB.Personal.Estate
+    description: "Wills, trusts, POA, healthcare directive, estate plan summaries."
+    naming:
+      prefix: "ESTATE"
+      components: ["doc_type", "year"]
+      format: "{prefix}-{doc_type}-{year}"
+      examples:
+        - "ESTATE-Will-2023.pdf"
+        - "ESTATE-Trust-2023.pdf"
+        - "ESTATE-POA-2023.pdf"
+
+  - id: KB.Personal.Legal
+    description: "Non-estate legal matters, settlements, judgments."
+    naming:
+      prefix: "LEGAL"
+      components: ["matter", "doc_type", "year"]
+      format: "{prefix}-{matter}-{doc_type}-{year}"
+      examples:
+        - "LEGAL-ContractDispute-Settlement-2024.pdf"
+
+  - id: KB.Personal.Health
+    description: "Medical history, vaccinations, EOBs, Medicare/Medicaid paperwork."
+    naming:
+      prefix: "HEALTH"
+      components: ["provider", "doc_type", "date"]
+      format: "{prefix}-{provider}-{doc_type}-{date}"
+      examples:
+        - "HEALTH-DrSmith-Bloodwork-20241201.pdf"
+        - "HEALTH-Vaccination-COVID-20240115.pdf"
+
+  - id: KB.Personal.Education
+    description: "Diplomas, transcripts, licenses, certifications, edu loan docs."
+    naming:
+      prefix: "EDU"
+      components: ["institution", "doc_type", "year"]
+      format: "{prefix}-{institution}-{doc_type}-{year}"
+      examples:
+        - "EDU-Stanford-Diploma-2015.pdf"
+        - "EDU-AWS-Certification-2024.pdf"
+
+  - id: KB.Personal.Operations
+    description: "Household admin, major receipts, service contracts, SSA statements."
+    naming:
+      prefix: "OPS"
+      components: ["category", "doc_type", "year"]
+      format: "{prefix}-{category}-{doc_type}-{year}"
+      examples:
+        - "OPS-HomeRepair-Invoice-2024.pdf"
+        - "OPS-SSA-Statement-2024.pdf"
+
+  - id: KB.Personal.Misc
+    description: "Important docs that don't fit elsewhere. Staging area for taxonomy evolution."
+    naming:
+      prefix: "MISC"
+      components: ["topic", "doc_type", "date"]
+      format: "{prefix}-{topic}-{doc_type}-{date}"
+      examples:
+        - "MISC-Travel-Itinerary-20241215.pdf"
+
+  # ==========================================================================
+  # KB.Assets.* - Physical asset documentation
+  # ==========================================================================
+  - id: KB.Assets.RealEstate
+    description: "Deeds, closing statements, mortgages, property tax, HOA, home insurance."
+    naming:
+      prefix: "RE"
+      components: ["property_nickname", "doc_type", "year"]
+      format: "{prefix}-{property_nickname}-{doc_type}-{year}"
+      examples:
+        - "RE-MainStreet-Deed-2020.pdf"
+        - "RE-BeachHouse-Mortgage-2022.pdf"
+        - "RE-Condo-HOA-2024.pdf"
+
+  - id: KB.Assets.Vehicles
+    description: "Vehicle titles, registration, auto loans, vehicle insurance, maintenance."
+    naming:
+      prefix: "VEH"
+      components: ["vehicle_name", "doc_type", "year"]
+      format: "{prefix}-{vehicle_name}-{doc_type}-{year}"
+      examples:
+        - "VEH-Tesla-Title-2023.pdf"
+        - "VEH-Honda-Insurance-2024.pdf"
+
+  # ==========================================================================
+  # KB.Finance.* - Financial documentation
+  # ==========================================================================
+  - id: KB.Finance.Banking
+    description: "Bank/credit union accounts, statements, LOCs, safe deposit box docs."
+    naming:
+      prefix: "BANK"
+      components: ["institution", "account_type", "period"]
+      format: "{prefix}-{institution}-{account_type}-{period}"
+      examples:
+        - "BANK-Chase-Checking-2024Q4.pdf"
+        - "BANK-Ally-Savings-2024.pdf"
+
+  - id: KB.Finance.Investments
+    description: "Brokerage, retirement, private placements, K-1s, investment contracts."
+    naming:
+      prefix: "INV"
+      components: ["account", "doc_type", "period"]
+      format: "{prefix}-{account}-{doc_type}-{period}"
+      examples:
+        - "INV-Fidelity-Statement-2024Q4.pdf"
+        - "INV-Vanguard-401k-2024.pdf"
+
+  - id: KB.Finance.Debt
+    description: "Student loans, credit cards, personal loans, promissory notes."
+    naming:
+      prefix: "DEBT"
+      components: ["lender", "loan_type", "year"]
+      format: "{prefix}-{lender}-{loan_type}-{year}"
+      examples:
+        - "DEBT-Navient-StudentLoan-2024.pdf"
+
+  - id: KB.Finance.Insurance
+    description: "Life, disability, LTC, umbrella, non-home/auto policies."
+    naming:
+      prefix: "INS"
+      components: ["policy_type", "provider", "year"]
+      format: "{prefix}-{policy_type}-{provider}-{year}"
+      examples:
+        - "INS-Life-Prudential-2024.pdf"
+        - "INS-Umbrella-StateFarm-2024.pdf"
+
+  - id: KB.Finance.Taxes
+    description: "Tax returns, 1099s, 1098s, IRS notices, deduction support."
+    naming:
+      prefix: "TAX"
+      components: ["jurisdiction", "type", "year"]
+      format: "{prefix}-{jurisdiction}-{type}-{year}"
+      examples:
+        - "TAX-Federal-Return-2024.pdf"
+        - "TAX-CA-1099-2024.pdf"
+        - "TAX-IRS-Notice-2024.pdf"
+
+  - id: KB.Finance.Knowledge
+    description: "Investing research, market analysis, educational materials."
+    naming:
+      prefix: "FINKNOW"
+      components: ["topic", "source", "date"]
+      format: "{prefix}-{topic}-{source}-{date}"
+      examples:
+        - "FINKNOW-MacroAnalysis-Substack-20241201.md"
+
+  - id: KB.Finance.Thesis
+    description: "Investment theses, strategy documents, position rationales."
+    naming:
+      prefix: "THESIS"
+      components: ["ticker_or_topic", "type", "date"]
+      format: "{prefix}-{ticker_or_topic}-{type}-{date}"
+      examples:
+        - "THESIS-AAPL-LongPosition-20241115.md"
+        - "THESIS-AI-SectorAnalysis-20241201.md"
+
+  # ==========================================================================
+  # KB.Work.* - Employment and career
+  # ==========================================================================
+  - id: KB.Work.Employment
+    description: "Employment contracts, comp plans, RSU/ESPP, benefits, pension docs."
+    naming:
+      prefix: "WORK"
+      components: ["employer", "doc_type", "year"]
+      format: "{prefix}-{employer}-{doc_type}-{year}"
+      examples:
+        - "WORK-Acme-Contract-2024.pdf"
+        - "WORK-Acme-RSUGrant-2024.pdf"
+
+  # ==========================================================================
+  # KB.Business.* - Business entities owned/operated
+  # ==========================================================================
+  - id: KB.Business.Entities
+    description: "LLC/corp docs, EIN, operating agreements, business bank docs."
+    naming:
+      prefix: "BIZ"
+      components: ["entity_name", "doc_type", "year"]
+      format: "{prefix}-{entity_name}-{doc_type}-{year}"
+      examples:
+        - "BIZ-MyLLC-OperatingAgreement-2023.pdf"
+        - "BIZ-MyLLC-EIN-2023.pdf"
+
+  # ==========================================================================
+  # KB.Digital.* - Digital life administration
+  # ==========================================================================
+  - id: KB.Digital.Accounts
+    description: "Account overview, domains, SaaS subscriptions (no raw passwords)."
+    naming:
+      prefix: "DIGITAL"
+      components: ["service", "doc_type", "year"]
+      format: "{prefix}-{service}-{doc_type}-{year}"
+      examples:
+        - "DIGITAL-AWS-AccountOverview-2024.md"
+        - "DIGITAL-Domains-Inventory-2024.md"
+
+# =============================================================================
+# NAMING CONVENTION DEFAULTS
+# =============================================================================
+# 
+# When classifier cannot determine all naming components:
+# - Use "Unknown" as placeholder for missing components
+# - Flag item with lower confidence for human review
+# - Allow reviewer to correct filename before migration
+#
+# Example: If year cannot be determined:
+#   TAX-Federal-Return-Unknown.pdf (with confidence penalty)
+# =============================================================================
+
+defaults:
+  unknown_placeholder: "Unknown"
+  confidence_penalty_for_unknown: 1  # Reduce confidence by 1 point (0-5 scale)
+  min_confidence_for_auto_approve: 4  # Require 4/5 or 5/5 for auto-approve
+
