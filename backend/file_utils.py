@@ -9,6 +9,19 @@ import pandas as pd  # Import pandas to read Excel and CSV files
 import hashlib
 from pptx import Presentation  # Import Presentation for PPT files
 
+def normalize_filename(filename):
+    """
+    Normalize filename by:
+    1. Replacing spaces with underscores
+    2. Removing special characters (keep alphanumeric, underscores, dots, hyphens)
+    """
+    name, ext = os.path.splitext(filename)
+    # Replace spaces with underscores
+    name = name.replace(' ', '_')
+    # Remove special characters (keep alphanumeric, _, -, .)
+    name = re.sub(r'[^\w\-\.]', '', name)
+    return name + ext
+
 def calculate_sha256(file_path):
     """Calculate SHA256 hash of a file."""
     sha256_hash = hashlib.sha256()

@@ -15,6 +15,8 @@ export interface DocumentItem {
   migrated_at?: string;
   sha256?: string;
   reviewer_notes?: string;
+  ai_prompt?: string;
+  ai_response?: string;
 }
 
 export interface Workspace {
@@ -27,5 +29,24 @@ export interface Taxonomy {
   workspaces: Workspace[];
 }
 
+export interface Workspace {
+  id: string;
+  description: string;
+  naming: {
+    prefix: string;
+    components: string[];
+    format: string;
+    examples: string[];
+  };
+}
 
+export interface Taxonomy {
+  version: string;
+  workspaces: Workspace[];
+  defaults: {
+    unknown_placeholder: string;
+    confidence_penalty_for_unknown: number;
+    min_confidence_for_auto_approve: number;
+  };
+}
 

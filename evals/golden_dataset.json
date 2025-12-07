@@ -1,0 +1,17 @@
+[
+    {
+        "source_path": "sample_data/paystub_2024.pdf",
+        "expected_workspace": "KB.Work.Employment",
+        "expected_subpath": "Paystubs"
+    },
+    {
+        "source_path": "sample_data/invoice_acme.pdf",
+        "expected_workspace": "KB.Personal.Operations",
+        "expected_subpath": "Invoices"
+    },
+    {
+        "source_path": "sample_data/resume_draft.docx",
+        "expected_workspace": "KB.Work.Employment",
+        "expected_subpath": "Resumes"
+    }
+]

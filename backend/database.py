@@ -39,6 +39,8 @@ class DocumentItem:
         migrated_at: Optional[str] = None,
         sha256: Optional[str] = None,
         reviewer_notes: Optional[str] = None,
+        ai_prompt: Optional[str] = None,
+        ai_response: Optional[str] = None,
         **kwargs
     ):
         self.id = id or str(uuid.uuid4())
@@ -57,6 +59,8 @@ class DocumentItem:
         self.migrated_at = migrated_at
         self.sha256 = sha256
         self.reviewer_notes = reviewer_notes
+        self.ai_prompt = ai_prompt
+        self.ai_response = ai_response
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -76,6 +80,8 @@ class DocumentItem:
             'migrated_at': self.migrated_at,
             'sha256': self.sha256,
             'reviewer_notes': self.reviewer_notes,
+            'ai_prompt': self.ai_prompt,
+            'ai_response': self.ai_response,
         }
 
 
@@ -109,7 +115,9 @@ class Database:
                 migrated_path TEXT,
                 migrated_at TEXT,
                 sha256 TEXT,
-                reviewer_notes TEXT
+                reviewer_notes TEXT,
+                ai_prompt TEXT,
+                ai_response TEXT
             )
         """)
         
@@ -129,8 +137,9 @@ class Database:
                 id, source_path, original_filename, extracted_text,
                 proposed_workspace, proposed_subpath, proposed_filename,
                 confidence, status, description, file_size, file_extension,
-                migrated_path, migrated_at, sha256, reviewer_notes
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                migrated_path, migrated_at, sha256, reviewer_notes,
+                ai_prompt, ai_response
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             item.id,
             item.source_path,
@@ -148,6 +157,8 @@ class Database:
             item.migrated_at,
             item.sha256,
             item.reviewer_notes,
+            item.ai_prompt,
+            item.ai_response,
         ))
         
         conn.commit()
@@ -214,6 +225,8 @@ class Database:
                 migrated_at=row['migrated_at'],
                 sha256=row['sha256'] if 'sha256' in row.keys() else None,
                 reviewer_notes=row['reviewer_notes'] if 'reviewer_notes' in row.keys() else None,
+                ai_prompt=row['ai_prompt'] if 'ai_prompt' in row.keys() else None,
+                ai_response=row['ai_response'] if 'ai_response' in row.keys() else None,
             )
             items.append(item)
         
@@ -249,8 +262,52 @@ class Database:
             migrated_at=row['migrated_at'],
             sha256=row['sha256'] if 'sha256' in row.keys() else None,
             reviewer_notes=row['reviewer_notes'] if 'reviewer_notes' in row.keys() else None,
+            ai_prompt=row['ai_prompt'] if 'ai_prompt' in row.keys() else None,
+            ai_response=row['ai_response'] if 'ai_response' in row.keys() else None,
         )
     
+    def get_items_by_ids(self, item_ids: List[str]) -> List[DocumentItem]:
+        """Get multiple items by ID."""
+        if not item_ids:
+            return []
+        
+        placeholders = ','.join(['?'] * len(item_ids))
+        query = f"SELECT * FROM document_items WHERE id IN ({placeholders})"
+        
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        cursor.execute(query, item_ids)
+        rows = cursor.fetchall()
+        conn.close()
+        
+        items = []
+        for row in rows:
+            item = DocumentItem(
+                id=row['id'],
+                source_path=row['source_path'],
+                original_filename=row['original_filename'],
+                extracted_text=row['extracted_text'] or '',
+                proposed_workspace=row['proposed_workspace'],
+                proposed_subpath=row['proposed_subpath'] or '',
+                proposed_filename=row['proposed_filename'],
+                confidence=row['confidence'],
+                status=row['status'],
+                description=row['description'] or '',
+                file_size=row['file_size'],
+                file_extension=row['file_extension'],
+                migrated_path=row['migrated_path'],
+                migrated_at=row['migrated_at'],
+                sha256=row['sha256'] if 'sha256' in row.keys() else None,
+                reviewer_notes=row['reviewer_notes'] if 'reviewer_notes' in row.keys() else None,
+                ai_prompt=row['ai_prompt'] if 'ai_prompt' in row.keys() else None,
+                ai_response=row['ai_response'] if 'ai_response' in row.keys() else None,
+            )
+            items.append(item)
+        
+        return items
+
     def update_item(self, item_id: str, updates: Dict[str, Any]) -> Optional[DocumentItem]:
         """Update a document item."""
         conn = sqlite3.connect(self.db_path)
@@ -272,6 +329,48 @@ class Database:
         conn.close()
         
         return self.get_item(item_id)
+
+    def bulk_update_status(self, item_ids: List[str], status: ItemStatus) -> int:
+        """Update status for multiple items."""
+        if not item_ids:
+            return 0
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        placeholders = ','.join(['?'] * len(item_ids))
+        query = f"UPDATE document_items SET status = ? WHERE id IN ({placeholders})"
+        
+        params = [status.value if isinstance(status, ItemStatus) else status] + item_ids
+        
+        cursor.execute(query, params)
+        count = cursor.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        return count
+
+    def bulk_update_workspace(self, item_ids: List[str], workspace: str) -> int:
+        """Update workspace for multiple items."""
+        if not item_ids:
+            return 0
+            
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        placeholders = ','.join(['?'] * len(item_ids))
+        query = f"UPDATE document_items SET proposed_workspace = ? WHERE id IN ({placeholders})"
+        
+        params = [workspace] + item_ids
+        
+        cursor.execute(query, params)
+        count = cursor.rowcount
+        
+        conn.commit()
+        conn.close()
+        
+        return count
     
     def count_items(
         self,

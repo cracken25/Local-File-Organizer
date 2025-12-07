@@ -34,12 +34,22 @@ class APIClient {
     });
   }
 
+  async startScan(inputPath: string) {
+    return this.scan({ input_path: inputPath });
+  }
+
   // Start classification
   async classify(data: { mode: string }) {
     return this.request('/classify', {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async startClassification(_inputPath: string, _sessionId: string) {
+    // Note: inputPath and sessionId might not be needed if session is stateful, 
+    // but keeping signature for compatibility with App.tsx
+    return this.classify({ mode: 'content' });
   }
 
   // Get classification status
@@ -95,6 +105,10 @@ class APIClient {
       method: 'POST',
       body: JSON.stringify(data || {}),
     });
+  }
+
+  async migrateFiles() {
+    return this.migrate({ dry_run: false });
   }
 
   // Get taxonomy

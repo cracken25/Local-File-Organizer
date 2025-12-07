@@ -2,6 +2,7 @@ import re
 import os
 import yaml
 from typing import Dict, Tuple, Optional
+from file_utils import calculate_sha256
 
 class TaxonomyClassifier:
     """Classifier that uses KB.* taxonomy to classify and organize files."""
@@ -18,7 +19,7 @@ class TaxonomyClassifier:
         with open(self.taxonomy_path, 'r') as f:
             return yaml.safe_load(f)
             
-    from file_utils import calculate_sha256
+
     
     def classify(self, extracted_text: str, original_filename: str, 
                  text_inference, original_path: str = "") -> Dict:
@@ -35,7 +36,7 @@ class TaxonomyClassifier:
             Dict with keys: workspace, subpath, filename, confidence, description, sha256
         """
         # Step 0: Calculate SHA256 hash
-        sha256_hash = self.calculate_sha256(original_path) if original_path else None
+        sha256_hash = calculate_sha256(original_path) if original_path else None
         
         # Step 1: Extract path hints from original file location
         path_hints = self._extract_path_hints(original_path, original_filename)

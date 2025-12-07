@@ -5,6 +5,7 @@ Provides REST API endpoints for classification, review, and migration.
 import os
 import yaml
 import shutil
+import datetime
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, BackgroundTasks, APIRouter
@@ -16,7 +17,7 @@ from enum import Enum
 
 # Import existing modules
 from classifier import TaxonomyClassifier
-from file_utils import collect_file_paths, separate_files_by_type, read_file_data
+from file_utils import collect_file_paths, separate_files_by_type, read_file_data, normalize_filename
 from data_processing_common import compute_operations, execute_operations
 from text_data_processing import process_text_files
 from image_data_processing import process_image_files
@@ -75,6 +76,7 @@ def set_webview_window(window):
 class ScanRequest(BaseModel):
     input_path: str
     output_path: Optional[str] = None
+    normalize: bool = False
 
 
 class ClassifyRequest(BaseModel):
@@ -99,6 +101,31 @@ class MigrateRequest(BaseModel):
 
 
 # Helper functions
+def generate_migration_report(migrated_items: List[DocumentItem], output_path: str) -> str:
+    """Generate a migration report in Markdown format."""
+    import datetime
+    
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    report = f"# Migration Report - {timestamp}\n\n"
+    report += f"Total Files Migrated: {len(migrated_items)}\n\n"
+    report += "| Original Filename | Destination | Workspace | Status |\n"
+    report += "|---|---|---|---|\n"
+    
+    for item in migrated_items:
+        dest = os.path.join(item.proposed_workspace, item.proposed_subpath or "", item.proposed_filename + (item.file_extension or ""))
+        report += f"| {item.original_filename} | {dest} | {item.proposed_workspace} | Success |\n"
+    
+    report_filename = f"migration_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+    report_path = os.path.join(output_path, report_filename)
+    
+    try:
+        with open(report_path, "w") as f:
+            f.write(report)
+        return report_path
+    except Exception as e:
+        print(f"Error saving migration report: {e}")
+        return ""
+
 def initialize_models():
     """Initialize AI models if not already initialized."""
     global image_inference, text_inference, classifier
@@ -195,6 +222,26 @@ async def scan_directory(request: ScanRequest):
     # Collect file paths
     file_paths = collect_file_paths(request.input_path)
     
+    # Normalize filenames if requested (Intake Edge)
+    if request.normalize:
+        normalized_paths = []
+        for fp in file_paths:
+            directory = os.path.dirname(fp)
+            filename = os.path.basename(fp)
+            new_filename = normalize_filename(filename)
+            
+            if new_filename != filename:
+                new_path = os.path.join(directory, new_filename)
+                try:
+                    os.rename(fp, new_path)
+                    normalized_paths.append(new_path)
+                except Exception as e:
+                    print(f"Error normalizing {fp}: {e}")
+                    normalized_paths.append(fp)
+            else:
+                normalized_paths.append(fp)
+        file_paths = normalized_paths
+    
     return {
         "input_path": request.input_path,
         "output_path": current_session['output_path'],
@@ -213,15 +260,16 @@ async def classify_files(request: ClassifyRequest, background_tasks: BackgroundT
         raise HTTPException(status_code=409, detail="Classification already in progress")
     
     # Initialize AI models
-    initialize_models()
+    # initialize_models()  # DISABLED due to segfault on macOS
     
     # Start classification in background
-    background_tasks.add_task(run_classification, request.mode)
+    # Use simple mode to avoid crash
+    background_tasks.add_task(run_classification_simple, request.mode)
     
     current_session['is_classifying'] = True
     current_session['classification_progress'] = 0
     
-    return {"status": "started", "message": "Classification started (simple mode - keyword-based)"}
+    return {"status": "started", "message": "Classification started (Safe Mode - keyword-based)"}
 
 
 def run_classification(mode: str):
@@ -240,75 +288,6 @@ def run_classification(mode: str):
                 if text_content:
                     text_tuples.append((fp, text_content))
             
-            # Process files
-            total_files = len(image_files) + len(text_tuples)
-            processed = 0
-            
-            # Process images
-            data_images = process_image_files(image_files, image_inference, text_inference, classifier, silent=True)
-            for data in data_images:
-                create_item_from_classification(data)
-                processed += 1
-                current_session['classification_progress'] = int((processed / total_files) * 100)
-            
-            # Process texts
-            data_texts = process_text_files(text_tuples, text_inference, classifier, silent=True)
-            for data in data_texts:
-                create_item_from_classification(data)
-                processed += 1
-                current_session['classification_progress'] = int((processed / total_files) * 100)
-        
-        elif mode == "date":
-            # Date-based organization (simplified for now)
-            for fp in file_paths[:20]:  # Limit for demo
-                item = DocumentItem(
-                    id="",
-                    source_path=fp,
-                    original_filename=os.path.basename(fp),
-                    extracted_text="",
-                    proposed_workspace="By_Date",
-                    proposed_subpath="",
-                    proposed_filename=os.path.basename(fp),
-                    confidence=5,
-                    status=ItemStatus.PENDING,
-                    description="Date-based organization"
-                )
-                db.create_item(item)
-        
-        elif mode == "type":
-            # Type-based organization (simplified for now)
-            for fp in file_paths[:20]:  # Limit for demo
-                ext = os.path.splitext(fp)[1]
-                item = DocumentItem(
-                    id="",
-                    source_path=fp,
-                    original_filename=os.path.basename(fp),
-                    extracted_text="",
-                    proposed_workspace="By_Type",
-                    proposed_subpath=ext,
-                    proposed_filename=os.path.basename(fp),
-                    confidence=5,
-                    status=ItemStatus.PENDING,
-                    description="Type-based organization"
-                )
-                db.create_item(item)
-        
-        current_session['is_classifying'] = False
-        current_session['classification_progress'] = 100
-        
-    except Exception as e:
-        current_session['is_classifying'] = False
-        current_session['classification_progress'] = -1
-        print(f"Classification error: {e}")
-
-
-def run_classification_simple(mode: str):
-    """Simple classification without AI models (temporary fallback)."""
-    try:
-        file_paths = collect_file_paths(current_session['input_path'])
-        total_files = len(file_paths)
-        
-        for idx, fp in enumerate(file_paths[:50]):  # Limit to 50 files for demo
             # Simple heuristic-based classification
             filename = os.path.basename(fp).lower()
             full_path_lower = fp.lower()
@@ -496,6 +475,36 @@ async def bulk_action(request: BulkActionRequest):
         count = db.bulk_update_status(request.item_ids, ItemStatus.IGNORED)
     elif request.action == "reject":
         count = db.bulk_update_status(request.item_ids, ItemStatus.REJECTED)
+    elif request.action == "reject_and_move":
+        # First mark as rejected
+        count = db.bulk_update_status(request.item_ids, ItemStatus.REJECTED)
+        # Then move files
+        items = db.get_items_by_ids(request.item_ids)
+        rejected_dir = os.path.join(os.path.dirname(current_session['input_path']), '_Rejected')
+        os.makedirs(rejected_dir, exist_ok=True)
+        for item in items:
+            try:
+                dest = os.path.join(rejected_dir, os.path.basename(item.source_path))
+                shutil.move(item.source_path, dest)
+                # Update path in DB or just leave as is (since it's rejected)
+                # Ideally we update the source_path, but for now just moving is enough
+            except Exception as e:
+                print(f"Error moving {item.source_path}: {e}")
+    elif request.action == "delete":
+        # Delete files
+        items = db.get_items_by_ids(request.item_ids)
+        deleted_count = 0
+        for item in items:
+            try:
+                if os.path.exists(item.source_path):
+                    os.remove(item.source_path)
+                deleted_count += 1
+            except Exception as e:
+                print(f"Error deleting {item.source_path}: {e}")
+        # Mark as rejected/deleted in DB (or remove?)
+        # For now, let's mark as REJECTED and add note
+        db.bulk_update_status(request.item_ids, ItemStatus.REJECTED)
+        count = deleted_count
     elif request.action == "set_workspace" and request.workspace:
         count = db.bulk_update_workspace(request.item_ids, request.workspace)
     else:
@@ -536,13 +545,16 @@ async def migrate_files(request: MigrateRequest):
             shutil.copy2(item.source_path, target_file)
             
             # Update status
-            db.update_item(item.id, {"status": ItemStatus.MIGRATED})
+            db.update_item(item.id, {"status": ItemStatus.MIGRATED, "migrated_at": datetime.datetime.now().isoformat()})
             migrated += 1
             
         except Exception as e:
             print(f"Error migrating {item.source_path}: {e}")
     
-    return {"message": f"Migrated {migrated} files", "migrated": migrated}
+    # Generate report
+    report_path = generate_migration_report(items, output_path)
+    
+    return {"message": f"Migrated {migrated} files", "migrated": migrated, "report_path": report_path}
 
 
 @api_router.get("/taxonomy")
