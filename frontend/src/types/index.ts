@@ -13,6 +13,8 @@ export interface DocumentItem {
   file_extension?: string;
   migrated_path?: string;
   migrated_at?: string;
+  sha256?: string;
+  reviewer_notes?: string;
 }
 
 export interface Workspace {
@@ -24,4 +26,6 @@ export interface Workspace {
 export interface Taxonomy {
   workspaces: Workspace[];
 }
+
+
 

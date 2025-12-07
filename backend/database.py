@@ -35,7 +35,10 @@ class DocumentItem:
         file_size: Optional[int] = None,
         file_extension: Optional[str] = None,
         migrated_path: Optional[str] = None,
+
         migrated_at: Optional[str] = None,
+        sha256: Optional[str] = None,
+        reviewer_notes: Optional[str] = None,
         **kwargs
     ):
         self.id = id or str(uuid.uuid4())
@@ -52,6 +55,8 @@ class DocumentItem:
         self.file_extension = file_extension
         self.migrated_path = migrated_path
         self.migrated_at = migrated_at
+        self.sha256 = sha256
+        self.reviewer_notes = reviewer_notes
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -69,6 +74,8 @@ class DocumentItem:
             'file_extension': self.file_extension,
             'migrated_path': self.migrated_path,
             'migrated_at': self.migrated_at,
+            'sha256': self.sha256,
+            'reviewer_notes': self.reviewer_notes,
         }
 
 
@@ -100,7 +107,9 @@ class Database:
                 file_size INTEGER,
                 file_extension TEXT,
                 migrated_path TEXT,
-                migrated_at TEXT
+                migrated_at TEXT,
+                sha256 TEXT,
+                reviewer_notes TEXT
             )
         """)
         
@@ -120,8 +129,8 @@ class Database:
                 id, source_path, original_filename, extracted_text,
                 proposed_workspace, proposed_subpath, proposed_filename,
                 confidence, status, description, file_size, file_extension,
-                migrated_path, migrated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                migrated_path, migrated_at, sha256, reviewer_notes
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             item.id,
             item.source_path,
@@ -137,6 +146,8 @@ class Database:
             item.file_extension,
             item.migrated_path,
             item.migrated_at,
+            item.sha256,
+            item.reviewer_notes,
         ))
         
         conn.commit()
@@ -201,6 +212,8 @@ class Database:
                 file_extension=row['file_extension'],
                 migrated_path=row['migrated_path'],
                 migrated_at=row['migrated_at'],
+                sha256=row['sha256'] if 'sha256' in row.keys() else None,
+                reviewer_notes=row['reviewer_notes'] if 'reviewer_notes' in row.keys() else None,
             )
             items.append(item)
         
@@ -234,6 +247,8 @@ class Database:
             file_extension=row['file_extension'],
             migrated_path=row['migrated_path'],
             migrated_at=row['migrated_at'],
+            sha256=row['sha256'] if 'sha256' in row.keys() else None,
+            reviewer_notes=row['reviewer_notes'] if 'reviewer_notes' in row.keys() else None,
         )
     
     def update_item(self, item_id: str, updates: Dict[str, Any]) -> Optional[DocumentItem]:

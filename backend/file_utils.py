@@ -6,7 +6,21 @@ import pytesseract
 import fitz  # PyMuPDF
 import docx
 import pandas as pd  # Import pandas to read Excel and CSV files
+import hashlib
 from pptx import Presentation  # Import Presentation for PPT files
+
+def calculate_sha256(file_path):
+    """Calculate SHA256 hash of a file."""
+    sha256_hash = hashlib.sha256()
+    try:
+        with open(file_path, "rb") as f:
+            # Read and update hash string in blocks of 4K
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        return sha256_hash.hexdigest()
+    except Exception as e:
+        print(f"Error calculating SHA256 for {file_path}: {e}")
+        return None
 
 def read_text_file(file_path):
     """Read text content from a text file."""

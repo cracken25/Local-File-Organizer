@@ -212,12 +212,11 @@ async def classify_files(request: ClassifyRequest, background_tasks: BackgroundT
     if current_session['is_classifying']:
         raise HTTPException(status_code=409, detail="Classification already in progress")
     
-    # SKIP AI model initialization to avoid crashes
-    # TODO: Fix Nexa SDK integration later
-    # initialize_models()
+    # Initialize AI models
+    initialize_models()
     
-    # Start classification in background using simple mode
-    background_tasks.add_task(run_classification_simple, request.mode)
+    # Start classification in background
+    background_tasks.add_task(run_classification, request.mode)
     
     current_session['is_classifying'] = True
     current_session['classification_progress'] = 0

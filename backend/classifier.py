@@ -17,6 +17,8 @@ class TaxonomyClassifier:
         """Load taxonomy from YAML file."""
         with open(self.taxonomy_path, 'r') as f:
             return yaml.safe_load(f)
+            
+    from file_utils import calculate_sha256
     
     def classify(self, extracted_text: str, original_filename: str, 
                  text_inference, original_path: str = "") -> Dict:
@@ -30,8 +32,11 @@ class TaxonomyClassifier:
             original_path: Full path to original file (optional)
             
         Returns:
-            Dict with keys: workspace, subpath, filename, confidence, description
+            Dict with keys: workspace, subpath, filename, confidence, description, sha256
         """
+        # Step 0: Calculate SHA256 hash
+        sha256_hash = self.calculate_sha256(original_path) if original_path else None
+        
         # Step 1: Extract path hints from original file location
         path_hints = self._extract_path_hints(original_path, original_filename)
         
@@ -71,7 +76,8 @@ class TaxonomyClassifier:
             'subpath': llm_result.get('subpath', ''),
             'filename': filename,
             'confidence': llm_result['confidence'],
-            'description': llm_result.get('description', '')
+            'description': llm_result.get('description', ''),
+            'sha256': sha256_hash
         }
     
     def _extract_path_hints(self, original_path: str, original_filename: str) -> Dict:

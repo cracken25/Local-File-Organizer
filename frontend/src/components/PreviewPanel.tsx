@@ -14,6 +14,7 @@ export default function PreviewPanel({ item, onUpdate, onClose }: PreviewPanelPr
   const [subpath, setSubpath] = useState('');
   const [filename, setFilename] = useState('');
   const [status, setStatus] = useState('');
+  const [reviewerNotes, setReviewerNotes] = useState('');
 
   useEffect(() => {
     console.log('PreviewPanel received item:', item);
@@ -27,6 +28,7 @@ export default function PreviewPanel({ item, onUpdate, onClose }: PreviewPanelPr
       setSubpath(item.proposed_subpath || '');
       setFilename(item.proposed_filename || '');
       setStatus(item.status || 'pending');
+      setReviewerNotes(item.reviewer_notes || '');
     }
   }, [item]);
 
@@ -38,18 +40,21 @@ export default function PreviewPanel({ item, onUpdate, onClose }: PreviewPanelPr
     );
   }
 
-  const hasChanges = 
+  const hasChanges =
     workspace !== (item.proposed_workspace || '') ||
     subpath !== (item.proposed_subpath || '') ||
     filename !== (item.proposed_filename || '') ||
-    status !== (item.status || 'pending');
+    status !== (item.status || 'pending') ||
+    reviewerNotes !== (item.reviewer_notes || '');
 
   const handleSave = () => {
     onUpdate({
       proposed_workspace: workspace,
       proposed_subpath: subpath,
       proposed_filename: filename,
+
       status: status,
+      reviewer_notes: reviewerNotes,
     });
   };
 
@@ -57,7 +62,9 @@ export default function PreviewPanel({ item, onUpdate, onClose }: PreviewPanelPr
     setWorkspace(item.proposed_workspace || '');
     setSubpath(item.proposed_subpath || '');
     setFilename(item.proposed_filename || '');
+
     setStatus(item.status || 'pending');
+    setReviewerNotes(item.reviewer_notes || '');
   };
 
   const handleApprove = () => {
@@ -102,6 +109,12 @@ export default function PreviewPanel({ item, onUpdate, onClose }: PreviewPanelPr
           <div>
             <span className="text-gray-600">Type:</span>{' '}
             <span className="font-medium">{item.file_extension || 'N/A'}</span>
+          </div>
+          <div className="col-span-2">
+            <span className="text-gray-600">SHA256:</span>{' '}
+            <span className="font-mono text-xs text-gray-500">
+              {item.sha256 ? item.sha256.substring(0, 16) + '...' : 'N/A'}
+            </span>
           </div>
         </div>
 
@@ -186,43 +199,57 @@ export default function PreviewPanel({ item, onUpdate, onClose }: PreviewPanelPr
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="border-t pt-4 space-y-2">
-          {hasChanges && (
-            <div className="flex space-x-2">
-              <button
-                onClick={handleSave}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
-              >
-                Save Changes
-              </button>
-              <button
-                onClick={handleReset}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
-              >
-                Reset
-              </button>
-            </div>
-          )}
-          
+      {/* Reviewer Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Reviewer Notes
+        </label>
+        <textarea
+          value={reviewerNotes}
+          onChange={(e) => setReviewerNotes(e.target.value)}
+          placeholder="Add notes about this classification..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 h-20"
+        />
+      </div>
+
+      {/* Action Buttons */}
+      <div className="border-t pt-4 space-y-2">
+        {hasChanges && (
           <div className="flex space-x-2">
             <button
-              onClick={handleApprove}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
+              onClick={handleSave}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
             >
-              Approve
+              Save Changes
             </button>
             <button
-              onClick={handleIgnore}
-              className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm font-medium"
+              onClick={handleReset}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm font-medium"
             >
-              Ignore
+              Reset
             </button>
           </div>
+        )}
+
+        <div className="flex space-x-2">
+          <button
+            onClick={handleApprove}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
+          >
+            Approve
+          </button>
+          <button
+            onClick={handleIgnore}
+            className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 text-sm font-medium"
+          >
+            Ignore
+          </button>
         </div>
       </div>
     </div>
+
   );
 }
 
