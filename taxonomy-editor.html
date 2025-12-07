@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxonomy Editor - File Organizer</title>
+    <link rel="stylesheet" href="taxonomy-editor.css?v=3">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <a href="admin.html" class="btn btn-icon" title="Back to Admin Tools"
+                style="text-decoration: none; margin-right: 1rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </a>
+            <h1 class="header-title">
+                <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Taxonomy Editor
+            </h1>
+        </div>
+        <div class="header-right">
+            <button id="validateBtn" class="btn btn-secondary" title="Validate taxonomy structure">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+                Validate
+            </button>
+            <button id="exportBtn" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Export YAML
+            </button>
+            <button id="discardBtn" class="btn btn-danger" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Discard
+            </button>
+            <button id="saveBtn" class="btn btn-primary" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                Save Changes
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Sidebar Tree View -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <input type="text" id="searchBox" class="search-box" placeholder="Search taxonomy...">
+            </div>
+
+            <div class="tree-container" id="treeContainer">
+                <!-- Tree will be dynamically generated here -->
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="addDomainBtn" class="btn btn-secondary btn-block">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add New Domain
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div id="emptyState" class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <h2>Select a Classification</h2>
+                <p>Choose a domain or scope from the tree to view and edit its details</p>
+            </div>
+
+            <div id="detailsPanel" class="details-panel" style="display: none;">
+                <!-- Classification Header -->
+                <div class="details-header">
+                    <div class="breadcrumb" id="breadcrumb"></div>
+                    <h2 class="details-title" id="detailsTitle">KB.Finance.Taxes</h2>
+                    <div class="details-actions">
+                        <button id="editTitleBtn" class="btn-icon" title="Edit name">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>
+                        <button id="deleteScopeBtn" class="btn-icon btn-icon-danger" title="Delete scope">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Two-column layout for main content -->
+                <div class="details-grid">
+                    <!-- Left Column: Classification Details -->
+                    <div class="details-section">
+                        <div class="section-header">
+                            <h3>Classification Details</h3>
+                            <span class="badge" id="scopeType">Scope</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descriptionInput">Description</label>
+                            <textarea id="descriptionInput" class="form-control" rows="3"
+                                placeholder="Describe what belongs in this classification..."></textarea>
+                            <span class="form-helper">A clear, one-sentence definition of what belongs here</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="decisionsInput">Decision Support</label>
+                            <textarea id="decisionsInput" class="form-control" rows="2"
+                                placeholder="What recurring decisions does this support?"></textarea>
+                            <span class="form-helper">What questions or decisions does this classification help
+                                answer?</span>
+                        </div>
+
+                        <!-- Naming Convention Section (only for scopes) -->
+                        <div id="namingSection" class="naming-section">
+                            <h4>Naming Convention</h4>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="prefixInput">Prefix</label>
+                                    <input type="text" id="prefixInput" class="form-control" placeholder="e.g., TAX">
+                                </div>
+                                <div class="form-group">
+                                    <label for="formatInput">Format Pattern</label>
+                                    <input type="text" id="formatInput" class="form-control"
+                                        placeholder="e.g., {prefix}-{type}-{year}">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="componentsInput">Components (comma-separated)</label>
+                                <input type="text" id="componentsInput" class="form-control"
+                                    placeholder="e.g., jurisdiction, type, year">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Examples</label>
+                                <div id="examplesList" class="examples-list">
+                                    <!-- Examples will be dynamically added -->
+                                </div>
+                                <button id="addExampleBtn" class="btn btn-sm btn-secondary">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Add Example
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: LLM Context -->
+                    <div class="details-section">
+                        <div class="section-header">
+                            <h3>LLM Classification Context</h3>
+                            <span class="badge badge-purple">AI Instructions</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="llmContextInput">Classification Instructions</label>
+                            <textarea id="llmContextInput" class="form-control" rows="10" placeholder="Provide detailed instructions for the LLM classifier...
+
+Examples:
+• What patterns should trigger this classification?
+• What edge cases to watch for?
+• What similar categories to distinguish from?
+• Any specific rules or exceptions?"></textarea>
+                            <span class="form-helper">Instructions to help the LLM agent accurately classify files into
+                                this category</span>
+                        </div>
+
+                        <div class="info-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <div>
+                                <strong>Context Guidelines:</strong>
+                                <ul>
+                                    <li>Be specific about file types and patterns</li>
+                                    <li>Explain boundary cases with similar categories</li>
+                                    <li>Include examples of what should NOT be classified here</li>
+                                    <li>Mention any temporal or contextual factors</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add child button for domains -->
+                <div id="addScopeContainer" class="add-scope-container" style="display: none;">
+                    <button id="addScopeBtn" class="btn btn-secondary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add New Scope
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for adding/editing -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New Item</h3>
+                <button class="modal-close" id="modalClose">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be dynamically inserted -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Load YAML parser -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="taxonomy-editor.js?v=6"></script>
+</body>
+
+</html>

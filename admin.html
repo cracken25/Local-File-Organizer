@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Organizer - Admin Tools</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1a2332 100%);
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #06b6d4, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: #cbd5e1;
+            margin-bottom: 3rem;
+            font-size: 1.125rem;
+        }
+
+        .tools-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .tool-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.25s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+            border-color: #06b6d4;
+        }
+
+        .tool-card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .tool-card .icon {
+            width: 32px;
+            height: 32px;
+            color: #06b6d4;
+        }
+
+        .tool-card p {
+            color: #94a3b8;
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 12px;
+            background: rgba(6, 182, 212, 0.2);
+            color: #06b6d4;
+            border: 1px solid #06b6d4;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>File Organizer Admin Tools</h1>
+        <p>Administrative tools for managing the File Organizer system</p>
+
+        <div class="tools-grid">
+            <a href="./taxonomy-editor.html" class="tool-card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Taxonomy Editor
+                </h2>
+                <p>Review and edit hierarchical taxonomy classifications. Manage domains, scopes, and LLM classification
+                    context.</p>
+                <span class="badge">Admin</span>
+            </a>
+
+            <a href="./index.html" class="tool-card">
+                <h2>
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    Back to Main App
+                </h2>
+                <p>Return to the File Organizer main application.</p>
+            </a>
+        </div>
+
+        <div style="
+                margin-top: 2rem;
+                padding: 1.5rem;
+                background: rgba(6, 182, 212, 0.1);
+                border: 1px solid rgba(6, 182, 212, 0.3);
+                border-radius: 12px;
+                display: flex;
+                gap: 1rem;
+            ">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" style="width: 24px; height: 24px; color: #06b6d4; flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <div>
+                <strong style="color: #f1f5f9; display: block; margin-bottom: 0.5rem;">About the Main
+                    Application</strong>
+                <p style="color: #cbd5e1; margin: 0; font-size: 0.875rem;">
+                    The main File Organizer is a desktop application (PyWebView). To launch it, run <code
+                        style="background: #1e293b; padding: 0.125rem 0.5rem; border-radius: 4px; font-family: monospace;">python3 main_gui.py</code>
+                    from the Local-File-Organizer directory.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
