@@ -54,23 +54,24 @@ if os.path.exists(frontend_dist):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 # Global state
+# Import LLM Engine
+from llm_engine import LLMEngine
+
+# ... (keep other imports)
+
+# Global state
 db = Database()
-classifier = None
-image_inference = None
-text_inference = None
-webview_window = None  # Store webview window reference
+llm_engine = None  # Initialize lazily or on startup
+# classifier = None # Removed old classifier
+# image_inference = None # Removed old inference
+# text_inference = None # Removed old inference
+webview_window = None
 current_session = {
     'input_path': None,
     'output_path': None,
     'is_classifying': False,
     'classification_progress': 0
 }
-
-def set_webview_window(window):
-    """Set the webview window reference for folder dialogs."""
-    global webview_window
-    webview_window = window
-
 
 # Pydantic models
 class ScanRequest(BaseModel):
@@ -100,153 +101,41 @@ class MigrateRequest(BaseModel):
     output_path: Optional[str] = None
 
 
-# Helper functions
-def generate_migration_report(migrated_items: List[DocumentItem], output_path: str) -> str:
-    """Generate a migration report in Markdown format."""
-    import datetime
-    
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    report = f"# Migration Report - {timestamp}\n\n"
-    report += f"Total Files Migrated: {len(migrated_items)}\n\n"
-    report += "| Original Filename | Destination | Workspace | Status |\n"
-    report += "|---|---|---|---|\n"
-    
-    for item in migrated_items:
-        dest = os.path.join(item.proposed_workspace, item.proposed_subpath or "", item.proposed_filename + (item.file_extension or ""))
-        report += f"| {item.original_filename} | {dest} | {item.proposed_workspace} | Success |\n"
-    
-    report_filename = f"migration_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
-    report_path = os.path.join(output_path, report_filename)
-    
-    try:
-        with open(report_path, "w") as f:
-            f.write(report)
-        return report_path
-    except Exception as e:
-        print(f"Error saving migration report: {e}")
-        return ""
-
 def initialize_models():
     """Initialize AI models if not already initialized."""
-    global image_inference, text_inference, classifier
-    
-    if image_inference is None or text_inference is None:
-        model_path = "llava-v1.6-vicuna-7b:q4_0"
-        model_path_text = "Llama3.2-3B-Instruct:q3_K_M"
-        
-        with filter_specific_output():
-            # Initialize VLM for images (using adapter)
-            image_inference = NexaVLMInference(
-                model_path=model_path,
-                temperature=0.3,
-                max_new_tokens=3000,
-                top_k=3,
-                top_p=0.2
-            )
-            
-            # Initialize LLM for text (using adapter)
-            text_inference = NexaTextInference(
-                model_path=model_path_text,
-                temperature=0.5,
-                max_new_tokens=3000,
-                top_k=3,
-                top_p=0.3
-            )
-    
-    if classifier is None:
-        taxonomy_path = os.path.join(os.path.dirname(__file__), 'taxonomy.yaml')
-        classifier = TaxonomyClassifier(taxonomy_path)
-
-
-# API Endpoints
-
-@api_router.get("/")
-async def api_root():
-    """API root endpoint."""
-    return {"message": "File Organizer API", "version": "1.0.0"}
-
-
-@app.get("/")
-async def serve_spa():
-    """Serve the React SPA."""
-    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
-    index_path = os.path.join(frontend_dist, 'index.html')
-    
-    if os.path.exists(index_path):
-        return FileResponse(
-            index_path,
-            headers={
-                "Cache-Control": "no-cache, no-store, must-revalidate",
-                "Pragma": "no-cache",
-                "Expires": "0"
-            }
-        )
-    else:
-        return {"message": "File Organizer API", "version": "1.0.0", "note": "Frontend not built. Run 'npm run build' in frontend/"}
-
+    global llm_engine
+    if llm_engine is None:
+        print("Initializing LLM Engine...")
+        llm_engine = LLMEngine()
+        print("LLM Engine initialized.")
 
 @api_router.get("/health")
 async def health():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "models_loaded": image_inference is not None and text_inference is not None,
-        "database_connected": db.conn is not None
+        "models_loaded": llm_engine is not None,
+        "database_connected": os.path.exists(db.db_path)
     }
 
 
 @api_router.post("/scan")
 async def scan_directory(request: ScanRequest):
-    """Scan a directory and return file list."""
+    """Scan a directory for files."""
     if not os.path.exists(request.input_path):
-        raise HTTPException(status_code=404, detail="Input path does not exist")
+        raise HTTPException(status_code=400, detail="Directory not found")
     
-    if not os.path.isdir(request.input_path):
-        raise HTTPException(status_code=400, detail="Input path must be a directory")
-    
-    # Clear previous session
-    db.clear_all()
-    
-    # Update session
     current_session['input_path'] = request.input_path
-    current_session['output_path'] = request.output_path or os.path.join(
-        os.path.dirname(request.input_path), 'organized_folder'
-    )
+    current_session['output_path'] = request.output_path or os.path.join(request.input_path, "Organized")
     
-    # Save paths for persistence
-    save_last_paths(
-        input_path=request.input_path,
-        output_path=current_session['output_path']
-    )
-    
-    # Collect file paths
+    # Count files
     file_paths = collect_file_paths(request.input_path)
     
-    # Normalize filenames if requested (Intake Edge)
-    if request.normalize:
-        normalized_paths = []
-        for fp in file_paths:
-            directory = os.path.dirname(fp)
-            filename = os.path.basename(fp)
-            new_filename = normalize_filename(filename)
-            
-            if new_filename != filename:
-                new_path = os.path.join(directory, new_filename)
-                try:
-                    os.rename(fp, new_path)
-                    normalized_paths.append(new_path)
-                except Exception as e:
-                    print(f"Error normalizing {fp}: {e}")
-                    normalized_paths.append(fp)
-            else:
-                normalized_paths.append(fp)
-        file_paths = normalized_paths
-    
     return {
-        "input_path": request.input_path,
-        "output_path": current_session['output_path'],
-        "file_count": len(file_paths),
-        "files": [{"path": fp, "name": os.path.basename(fp)} for fp in file_paths[:100]]  # Limit to first 100
+        "status": "scanned", 
+        "count": len(file_paths), 
+        "path": request.input_path,
+        "message": f"Found {len(file_paths)} files"
     }
 
 
@@ -260,117 +149,77 @@ async def classify_files(request: ClassifyRequest, background_tasks: BackgroundT
         raise HTTPException(status_code=409, detail="Classification already in progress")
     
     # Initialize AI models
-    # initialize_models()  # DISABLED due to segfault on macOS
+    initialize_models()
     
     # Start classification in background
-    # Use simple mode to avoid crash
-    background_tasks.add_task(run_classification_simple, request.mode)
+    background_tasks.add_task(run_classification, request.mode)
     
     current_session['is_classifying'] = True
     current_session['classification_progress'] = 0
     
-    return {"status": "started", "message": "Classification started (Safe Mode - keyword-based)"}
-
+    return {"status": "started", "message": "Classification started (Ollama/Llama3)"}
 
 def run_classification(mode: str):
-    """Run classification (called in background)."""
+    """Run classification using LLM Engine."""
+    global llm_engine
     try:
+        if llm_engine is None:
+            initialize_models()
+
         file_paths = collect_file_paths(current_session['input_path'])
+        total_files = len(file_paths)
         
-        if mode == "content":
-            # Separate files by type
-            image_files, text_files = separate_files_by_type(file_paths)
-            
-            # Prepare text tuples
-            text_tuples = []
-            for fp in text_files:
-                text_content = read_file_data(fp)
-                if text_content:
-                    text_tuples.append((fp, text_content))
-            
-            # Simple heuristic-based classification
-            filename = os.path.basename(fp).lower()
-            full_path_lower = fp.lower()
-            ext = os.path.splitext(fp)[1].lower()
-            
-            # Determine workspace based on keywords
-            # Check paystubs FIRST (more specific than generic tax terms)
-            workspace = "Personal"
-            subpath = "Misc"
-            confidence = 3
-            matched_keywords = []
-            classification_reason = "Default classification"
-            
-            # Check path AND filename for better matching
-            if any(kw in full_path_lower for kw in ['paystub', 'paycheck', 'pay stub', 'salary', 'earnings']):
-                workspace = "Finance"
-                subpath = "Income/Paystubs"
-                confidence = 4
-                matched_keywords = [kw for kw in ['paystub', 'paycheck', 'pay stub', 'salary', 'earnings'] if kw in full_path_lower]
-                classification_reason = f"Matched paystub keywords: {matched_keywords}"
-            elif any(kw in full_path_lower for kw in ['tax', 'w2', 'w-2', '1099', 'return']):
-                workspace = "Finance"
-                subpath = "Taxes/Federal"
-                confidence = 4
-                matched_keywords = [kw for kw in ['tax', 'w2', 'w-2', '1099', 'return'] if kw in full_path_lower]
-                classification_reason = f"Matched tax keywords: {matched_keywords}"
-            elif any(kw in full_path_lower for kw in ['invoice', 'receipt', 'bill']):
-                workspace = "Finance"
-                subpath = "Receipts"
-                confidence = 3
-                matched_keywords = [kw for kw in ['invoice', 'receipt', 'bill'] if kw in full_path_lower]
-                classification_reason = f"Matched receipt keywords: {matched_keywords}"
-            elif any(kw in full_path_lower for kw in ['bank', 'statement', 'account']):
-                workspace = "Finance"
-                subpath = "Banking"
-                confidence = 3
-                matched_keywords = [kw for kw in ['bank', 'statement', 'account'] if kw in full_path_lower]
-                classification_reason = f"Matched banking keywords: {matched_keywords}"
-            elif any(kw in full_path_lower for kw in ['contract', 'agreement']):
-                workspace = "Legal"
-                subpath = "Contracts"
-                confidence = 3
-                matched_keywords = [kw for kw in ['contract', 'agreement'] if kw in full_path_lower]
-                classification_reason = f"Matched legal keywords: {matched_keywords}"
-            elif any(kw in full_path_lower for kw in ['resume', 'cv']):
-                workspace = "Career"
-                subpath = "Documents"
-                confidence = 4
-                matched_keywords = [kw for kw in ['resume', 'cv'] if kw in full_path_lower]
-                classification_reason = f"Matched career keywords: {matched_keywords}"
-            else:
-                classification_reason = f"No keywords matched in '{filename}' or path"
-            
-            # Create item with debug information
-            debug_info = f"""Classification Details:
-- File: {os.path.basename(fp)}
-- Full path: {fp}
-- Reason: {classification_reason}
-- Matched keywords: {matched_keywords if matched_keywords else 'none'}
-- Workspace: {workspace}
-- Subpath: {subpath}
-- Confidence: {confidence}/5"""
-            
-            item = DocumentItem(
-                id="",
-                source_path=fp,
-                original_filename=os.path.basename(fp),
-                extracted_text="",
-                proposed_workspace=workspace,
-                proposed_subpath=subpath,
-                proposed_filename=os.path.basename(fp),
-                confidence=confidence,
-                status=ItemStatus.PENDING,
-                description=debug_info,
-                file_size=os.path.getsize(fp) if os.path.exists(fp) else None,
-                file_extension=ext
-            )
-            db.create_item(item)
-            
-            print(f"Classified: {os.path.basename(fp)} → {workspace}/{subpath} ({confidence}/5)")
+        for idx, fp in enumerate(file_paths):
+            try:
+                # Extract text (using existing helpers or simple read)
+                text_content = ""
+                try:
+                    text_content = read_file_data(fp)
+                except Exception as e:
+                    print(f"Error reading {fp}: {e}")
+                
+                # Calculate SHA256
+                import hashlib
+                sha256_hash = ""
+                try:
+                    with open(fp, "rb") as f:
+                        bytes = f.read() 
+                        sha256_hash = hashlib.sha256(bytes).hexdigest()
+                except Exception:
+                    pass
+
+                # Classify using LLM Engine
+                original_filename = os.path.basename(fp)
+                print(f"Classifying: {original_filename}")
+                classification = llm_engine.classify_document(original_filename, text_content or "")
+                
+                # Create item
+                item = DocumentItem(
+                    id="",
+                    source_path=fp,
+                    original_filename=original_filename,
+                    extracted_text=text_content[:1000] if text_content else "",
+                    proposed_workspace=classification['workspace'],
+                    proposed_subpath=classification['scope'], # Mapping scope to subpath
+                    proposed_filename=os.path.splitext(original_filename)[0], # Keep original stem
+                    confidence=int(classification['confidence'] * 100) if classification['confidence'] <= 1 else int(classification['confidence']), # Handle 0-1 vs 0-100
+                    status=ItemStatus.PENDING,
+                    description=classification['reasoning'],
+                    file_size=os.path.getsize(fp) if os.path.exists(fp) else None,
+                    file_extension=os.path.splitext(fp)[1],
+                    sha256=sha256_hash,
+                    ai_prompt=classification['prompt'],
+                    ai_response=classification['raw_response']
+                )
+                db.create_item(item)
+                
+                print(f"Classified: {original_filename} -> {classification['workspace']}/{classification['scope']}")
+
+            except Exception as e:
+                print(f"Error processing file {fp}: {e}")
             
             # Update progress
-            current_session['classification_progress'] = int(((idx + 1) / min(total_files, 50)) * 100)
+            current_session['classification_progress'] = int(((idx + 1) / total_files) * 100)
         
         current_session['is_classifying'] = False
         current_session['classification_progress'] = 100
@@ -400,6 +249,23 @@ def create_item_from_classification(data: Dict[str, Any]):
         file_extension=os.path.splitext(data['file_path'])[1]
     )
     db.create_item(item)
+
+
+def generate_migration_report(items: List[DocumentItem], output_path: str) -> str:
+    """Generate a migration report."""
+    report_path = os.path.join(output_path, f"migration_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md")
+    
+    with open(report_path, "w") as f:
+        f.write(f"# Migration Report - {datetime.datetime.now().isoformat()}\n\n")
+        f.write(f"Total items: {len(items)}\n\n")
+        f.write("| Original Filename | Destination | Status |\n")
+        f.write("| ----------------- | ----------- | ------ |\n")
+        
+        for item in items:
+            dest = os.path.join(item.proposed_workspace, item.proposed_subpath or "", item.proposed_filename + item.file_extension)
+            f.write(f"| {item.original_filename} | {dest} | {item.status} |\n")
+            
+    return report_path
 
 
 @api_router.get("/classify/status")

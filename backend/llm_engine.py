@@ -8,7 +8,7 @@ class LLMEngine:
     """
     Abstraction for Local LLM interaction (Ollama).
     """
-    def __init__(self, model_name: str = "llama3.1:8b", base_url: str = "http://localhost:11434"):
+    def __init__(self, model_name: str = "llama3.2-vision:11b", base_url: str = "http://localhost:11434"):
         self.model_name = model_name
         self.base_url = base_url
         self.taxonomy = self._load_taxonomy()
@@ -29,11 +29,9 @@ class LLMEngine:
         if not self.taxonomy:
             return "No taxonomy defined."
         
-        context = "Available Workspaces and Scopes:\n"
-        for workspace in self.taxonomy.get('workspaces', []):
-            context += f"- {workspace['name']}: {workspace.get('description', '')}\n"
-            for scope in workspace.get('scopes', []):
-                context += f"  - {scope['id']}: {scope.get('description', '')}\n"
+        context = "Available Classification Categories (IDs):\n"
+        for item in self.taxonomy.get('workspaces', []):
+            context += f"- {item['id']}: {item.get('description', '')}\n"
         return context
 
     def classify_document(self, filename: str, content: str) -> Dict[str, Any]:
@@ -53,9 +51,9 @@ class LLMEngine:
         system_prompt = f"""You are a strict document classifier. Your job is to classify documents into a predefined taxonomy.
         
 RULES:
-1. You MUST select the best fitting Workspace and Scope from the provided list.
-2. If the document does not clearly fit any existing Scope with high confidence (>0.8), you MUST classify it as "Misc" or "Needs Review".
-3. Do NOT invent new Scopes. Use ONLY the ones provided.
+1. You MUST select the best fitting Category ID from the provided list.
+2. If the document does not clearly fit any existing Category with high confidence (>0.8), you MUST classify it as "KB.Personal.Misc".
+3. Do NOT invent new Categories. Use ONLY the IDs provided.
 4. Provide a confidence score between 0.0 and 1.0.
 5. Provide a brief reasoning for your decision.
 
@@ -63,8 +61,7 @@ RULES:
 
 Output Format:
 Return ONLY a JSON object with the following keys:
-- workspace: The name of the workspace (e.g., "Finance")
-- scope: The ID of the scope (e.g., "KB.Finance.Taxes")
+- category_id: The ID of the selected category (e.g., "KB.Finance.Taxes")
 - confidence: A float between 0.0 and 1.0
 - reasoning: A short explanation
 """
@@ -93,10 +90,18 @@ Content Snippet:
             raw_content = result['message']['content']
             parsed_content = json.loads(raw_content)
             
-            # Normalize keys if needed
+            category_id = parsed_content.get("category_id", "KB.Personal.Misc")
+            parts = category_id.split('.')
+            if len(parts) >= 3:
+                workspace = parts[1] # e.g. Personal
+                scope = parts[2]     # e.g. Identity
+            else:
+                workspace = "Unsorted"
+                scope = "Misc"
+
             return {
-                "workspace": parsed_content.get("workspace", "Unsorted"),
-                "scope": parsed_content.get("scope", "Misc"),
+                "workspace": workspace,
+                "scope": scope,
                 "confidence": float(parsed_content.get("confidence", 0.0)),
                 "reasoning": parsed_content.get("reasoning", "No reasoning provided"),
                 "prompt": f"SYSTEM:\n{system_prompt}\n\nUSER:\n{user_prompt}",
