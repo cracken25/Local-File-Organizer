@@ -1,0 +1,59 @@
+{
+    "successful_classification": {
+        "textResponse": "{\"category_id\": \"KB.Finance.Tax.Filing.Federal\", \"confidence\": 0.92, \"reasoning\": \"Document contains IRS Form 1040 with federal tax information for fiscal year 2024.\"}",
+        "sources": [
+            {
+                "title": "taxonomy.yaml",
+                "chunk": "KB.Finance.Tax.Filing.Federal: Federal tax returns and IRS forms"
+            }
+        ],
+        "type": "textResponse"
+    },
+    "low_confidence_classification": {
+        "textResponse": "{\"category_id\": \"KB.Personal.Misc\", \"confidence\": 0.45, \"reasoning\": \"Document content is ambiguous and does not clearly match any defined taxonomy categories.\"}",
+        "sources": [],
+        "type": "textResponse"
+    },
+    "hallucinated_category": {
+        "textResponse": "{\"category_id\": \"KB.Finance.Cryptocurrency.Trading\", \"confidence\": 0.88, \"reasoning\": \"Document contains cryptocurrency transaction records.\"}",
+        "sources": [],
+        "type": "textResponse"
+    },
+    "error_401_unauthorized": {
+        "error": "Unauthorized",
+        "message": "Invalid API key provided"
+    },
+    "error_500_server": {
+        "error": "Internal Server Error",
+        "message": "Workspace 'librarian-core' is currently unavailable"
+    },
+    "workspace_info": {
+        "workspace": {
+            "id": 1,
+            "name": "Librarian Core",
+            "slug": "librarian-core",
+            "vectorCount": 1250,
+            "documentCount": 3,
+            "createdAt": "2024-01-01T00:00:00Z"
+        }
+    },
+    "document_upload_success": {
+        "success": true,
+        "documentId": "doc_123456",
+        "message": "Document uploaded and embedding in progress"
+    },
+    "rag_with_citations": {
+        "textResponse": "{\"category_id\": \"KB.Finance.Tax.Filing.Federal\", \"confidence\": 0.95, \"reasoning\": \"According to the taxonomy rules, IRS forms should be classified under Federal filing. The document contains Form 1040, which matches the quality test: 'Does the document contain IRS forms?'\"}",
+        "sources": [
+            {
+                "title": "taxonomy.yaml",
+                "chunk": "KB.Finance.Tax.Filing.Federal:\n  description: Federal tax returns and IRS forms\n  quality_tests:\n    - Does the document contain IRS forms?"
+            },
+            {
+                "title": "TaxonomyRequirements.MD",
+                "chunk": "## Scope Governance\n\nEach document must have a Single Primary Home. When classifying tax documents, federal and state filings must be differentiated."
+            }
+        ],
+        "type": "textResponse"
+    }
+}

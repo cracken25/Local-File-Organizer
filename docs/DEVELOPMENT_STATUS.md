@@ -4,7 +4,7 @@
 
 The **Enhanced File Organizer** is a desktop application designed to intelligently organize files on a user's local device using artificial intelligence. This project represents a significant enhancement over the original command-line interface (CLI) version, introducing a modern web-based GUI, structured taxonomy system, comprehensive review workflow, and database-backed document tracking.
 
-The application follows a four-step workflow: **Scan → Classify → Review → Migrate**, with all AI processing occurring entirely on-device to ensure complete privacy. The project uses a FastAPI backend (Python 3.12+) with a React/TypeScript frontend, integrated via PyWebView for desktop deployment.
+The application follows a four-step workflow: **Scan → Classify → Review → Migrate**, with all AI processing occurring entirely on-device to ensure complete privacy. The project uses a FastAPI backend (Python 3.12+) with a React/TypeScript frontend, deployed as a web application accessible via browser.
 
 This document provides a comprehensive assessment of the current development state against the Product Requirements Document (PRD.md) and outlines a detailed plan for completing the remaining work. The completion plan incorporates iterative development cycles, automated testing infrastructure, Human-in-the-Loop (HITL) testing, and realistic timelines to ensure successful project delivery.
 
@@ -22,7 +22,7 @@ This section presents a detailed comparison of the existing codebase and functio
 | Feature 4: Bulk Actions | Multi-select, bulk approve/reject/ignore, bulk workspace assignment | **Partially Complete** | `backend/api.py:488-505`, `frontend/src/components/BulkActions.tsx` (missing bulk workspace UI) |
 | Feature 5: File Preview | Text content display, image preview, metadata display, file path display | **Partially Complete** | `backend/api.py:564-577`, `frontend/src/components/PreviewPanel.tsx` (image preview needs verification) |
 | Feature 6: Migration Execution | Directory structure creation, file movement, conflict handling, migration tracking | **Complete** | `backend/api.py:508-546` |
-| Feature 7: Desktop GUI | Native desktop application using PyWebView | **Complete** | `main_gui.py`, PyWebView integration functional |
+| Feature 7: Web Interface | Web-based application accessible via browser | **Complete** | `run_server.py`, browser-based deployment |
 | Feature 8: Confidence Indicators | Confidence scoring (0-5 scale), visual indicators, filtering by confidence | **Complete** | `frontend/src/components/ConfidenceIndicator.tsx`, confidence in database schema |
 | Feature 9: Taxonomy Management | Taxonomy viewer, category proposal workflow (7-step), governance rules | **Partially Complete** | `backend/taxonomy.yaml`, `backend/classifier.py`, UI for management missing |
 | Feature 10: Misc/No Good Fit | Classification fallback, dedicated review view, pattern detection | **Not Started** | No implementation found |
@@ -34,6 +34,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 1: Directory Scanning and File Discovery
 
 **PRD Requirements:**
+
 - Recursive directory scanning to discover files in nested folders
 - File type filtering based on supported extensions
 - Metadata extraction (file size, modification date, extension, source file name, source file path)
@@ -41,6 +42,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Ability to save and recall previously used input/output paths
 
 **Current Implementation:**
+
 - ✅ **Backend**: `/scan` endpoint implemented (`backend/api.py:171-203`)
   - Recursive scanning via `collect_file_paths()` function
   - File type filtering implemented
@@ -50,11 +52,12 @@ This section presents a detailed comparison of the existing codebase and functio
   - Folder selection dialog integration
   - Input/output path fields with browse buttons
   - File count display after scanning
-- ⚠️ **Gaps**: 
+- ⚠️ **Gaps**:
   - Progress indication during scan not fully implemented (no real-time progress updates)
   - Metadata extraction may be incomplete (needs verification of all required fields)
 
 **Code References:**
+
 - `backend/api.py:171-203` - Scan endpoint
 - `backend/file_utils.py` - File collection utilities
 - `backend/config_store.py` - Path persistence
@@ -63,6 +66,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 2: AI-Powered Taxonomy-Based Classification
 
 **PRD Requirements:**
+
 - Content extraction from supported file types (PDF, DOCX, TXT, MD, images, spreadsheets, presentations)
 - OCR processing for scanned documents
 - Image analysis using vision-language model (LLaVA-v1.6)
@@ -75,6 +79,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Confidence scoring (0-5 scale)
 
 **Current Implementation:**
+
 - ⚠️ **AI Models**: Currently **DISABLED** (`backend/api.py:215-217`)
   - Comment: "SKIP AI model initialization to avoid crashes"
   - TODO: "Fix Nexa SDK integration later"
@@ -87,7 +92,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - ✅ **Simple Classification**: Keyword-based fallback working
   - Handles common document types (paystubs, taxes, invoices, etc.)
   - Generates workspace, subpath, and confidence scores
-- ⚠️ **Content Extraction**: 
+- ⚠️ **Content Extraction**:
   - Text extraction implemented (`read_file_data()`)
   - OCR support exists (`pytesseract` imported in `file_utils.py`) but usage needs verification
   - Image processing functions exist but not called when AI models disabled
@@ -98,6 +103,7 @@ This section presents a detailed comparison of the existing codebase and functio
   - Taxonomy workspace selector partially implemented (manual input in PreviewPanel, not dropdown)
 
 **Code References:**
+
 - `backend/api.py:206-225` - Classification endpoint
 - `backend/api.py:306-398` - Simple classification fallback
 - `backend/classifier.py` - Taxonomy classifier implementation
@@ -109,6 +115,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 3: Review and Approval Workflow
 
 **PRD Requirements:**
+
 - Tabular display of all scanned files with classification results
 - Display of original filename, proposed workspace, proposed subpath, proposed filename
 - Confidence indicators for each classification
@@ -118,7 +125,8 @@ This section presents a detailed comparison of the existing codebase and functio
 - Filtering and sorting capabilities
 
 **Current Implementation:**
-- ✅ **Backend**: 
+
+- ✅ **Backend**:
   - `/items` endpoint with filtering (`backend/api.py:436-456`)
   - `/items/{item_id}` endpoint for single item retrieval
   - `/items/{item_id}` PATCH endpoint for updates (`backend/api.py:468-485`)
@@ -134,6 +142,7 @@ This section presents a detailed comparison of the existing codebase and functio
   - Power user debug section not implemented (see Feature 12)
 
 **Code References:**
+
 - `backend/api.py:436-485` - Item management endpoints
 - `frontend/src/components/DocumentTable.tsx` - Table component
 - `frontend/src/components/PreviewPanel.tsx` - Preview/edit component
@@ -141,6 +150,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 4: Bulk Actions and Batch Management
 
 **PRD Requirements:**
+
 - Multi-select with checkbox controls
 - Bulk approve all selected items
 - Bulk reject all selected items
@@ -149,6 +159,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Filter-based bulk operations
 
 **Current Implementation:**
+
 - ✅ **Backend**: `/items/bulk-action` endpoint implemented (`backend/api.py:488-505`)
   - Supports approve, ignore, reject actions
   - Supports bulk workspace assignment (`set_workspace` action)
@@ -162,6 +173,7 @@ This section presents a detailed comparison of the existing codebase and functio
   - Select all/none controls need verification
 
 **Code References:**
+
 - `backend/api.py:488-505` - Bulk action endpoint
 - `frontend/src/components/BulkActions.tsx` - Bulk actions UI
 - `frontend/src/components/DocumentTable.tsx:37-50` - Checkbox implementation
@@ -169,6 +181,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 5: File Preview and Content Inspection
 
 **PRD Requirements:**
+
 - Display of extracted text content
 - Image preview for image files
 - Display of file metadata (size, extension, path)
@@ -178,6 +191,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Display AI-generated description/reasoning
 
 **Current Implementation:**
+
 - ✅ **Backend**: `/preview/{item_id}` endpoint implemented (`backend/api.py:564-577`)
   - Returns extracted text preview (first 1000 characters)
   - Returns file type information
@@ -193,12 +207,14 @@ This section presents a detailed comparison of the existing codebase and functio
   - Full text viewer with scroll may need improvement
 
 **Code References:**
+
 - `backend/api.py:564-577` - Preview endpoint
 - `frontend/src/components/PreviewPanel.tsx` - Preview component
 
 #### Feature 6: Migration Execution and File Movement
 
 **PRD Requirements:**
+
 - Create directory structure based on approved classifications
 - Move or copy files to destination paths
 - Handle file name conflicts
@@ -208,6 +224,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Support dry-run mode (preview without executing)
 
 **Current Implementation:**
+
 - ✅ **Backend**: `/migrate` endpoint fully implemented (`backend/api.py:508-546`)
   - Creates directory structure (workspace/subpath)
   - Copies files using `shutil.copy2()` (preserves metadata)
@@ -219,12 +236,14 @@ This section presents a detailed comparison of the existing codebase and functio
   - Migration history tracking in database exists but history view not implemented in UI
 
 **Code References:**
+
 - `backend/api.py:508-546` - Migration endpoint
 - `backend/database.py` - Migration status tracking
 
 #### Feature 7: Desktop GUI Application
 
 **PRD Requirements:**
+
 - Native window with standard desktop controls
 - Integration with OS file dialogs
 - System tray integration (optional)
@@ -233,9 +252,11 @@ This section presents a detailed comparison of the existing codebase and functio
 - Native menu bar (optional)
 
 **Current Implementation:**
-- ✅ **Complete**: `main_gui.py` implements PyWebView desktop application
-  - Native window with standard controls
-  - OS file dialog integration via PyWebView API
+
+- ✅ **Complete**: `run_server.py` implements web server launcher
+- Backend serves React app via FastAPI at <http://localhost:8765>
+  - Manual folder path entry in web interface
+  - All features accessible via browser
   - Window configuration (size, resizable, min_size)
   - FastAPI backend integration
   - React frontend serving
@@ -246,12 +267,14 @@ This section presents a detailed comparison of the existing codebase and functio
   - Native menu bar not implemented (marked optional in PRD)
 
 **Code References:**
+
 - `main_gui.py` - Desktop application entry point
 - `backend/api.py:580-605` - Folder browse endpoint
 
 #### Feature 8: Confidence Indicators and Quality Metrics
 
 **PRD Requirements:**
+
 - Confidence scoring algorithm (0-5 scale)
 - Visual confidence indicators (color-coded bars, badges)
 - Filtering by confidence level
@@ -259,7 +282,8 @@ This section presents a detailed comparison of the existing codebase and functio
 - Confidence-based sorting options
 
 **Current Implementation:**
-- ✅ **Complete**: 
+
+- ✅ **Complete**:
   - Confidence scoring implemented (0-5 scale in database)
   - `ConfidenceIndicator.tsx` component with visual bars
   - Confidence displayed in DocumentTable
@@ -268,6 +292,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - ✅ **UI**: Color-coded confidence display (green/yellow/red based on score)
 
 **Code References:**
+
 - `frontend/src/components/ConfidenceIndicator.tsx` - Confidence visualization
 - `backend/api.py:436-456` - Confidence filtering in items endpoint
 - `frontend/src/components/DocumentTable.tsx:32` - Default sorting by confidence
@@ -275,6 +300,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 9: Taxonomy Management and Customization
 
 **PRD Requirements:**
+
 - Display taxonomy structure (four-level spine)
 - View Domain and Workspace/Scope definitions
 - Taxonomy file (YAML) viewing and editing capability
@@ -285,6 +311,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Governance warnings
 
 **Current Implementation:**
+
 - ✅ **Taxonomy Structure**: `taxonomy.yaml` file exists with full structure
   - Four-level spine defined
   - Workspace definitions with descriptions
@@ -303,6 +330,7 @@ This section presents a detailed comparison of the existing codebase and functio
   - Taxonomy management tools (Power User feature)
 
 **Code References:**
+
 - `backend/taxonomy.yaml` - Taxonomy definition file
 - `backend/api.py:549-555` - Taxonomy endpoint
 - `backend/classifier.py` - Taxonomy classifier
@@ -310,6 +338,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 10: Misc and No Good Fit Classification Handling
 
 **PRD Requirements:**
+
 - Classification of items as Misc or no_good_fit when no suitable category exists
 - Dedicated view/filter for items with Misc/no_good_fit status
 - Pattern detection in Misc items
@@ -318,6 +347,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Ability to manually reassign Misc items
 
 **Current Implementation:**
+
 - ❌ **Not Implemented**: No evidence of Misc/no_good_fit handling found
   - Simple classification fallback uses default "Personal" workspace
   - No dedicated Misc classification logic
@@ -326,11 +356,13 @@ This section presents a detailed comparison of the existing codebase and functio
   - No integration with category proposal workflow
 
 **Code References:**
+
 - None - Feature not implemented
 
 #### Feature 11: Database Persistence and Session Management
 
 **PRD Requirements:**
+
 - SQLite database for document items
 - Status tracking (pending, approved, rejected, ignored, migrated)
 - Session persistence across application restarts
@@ -339,6 +371,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Ability to clear/reset database
 
 **Current Implementation:**
+
 - ✅ **Complete**: `backend/database.py` fully implements all requirements
   - SQLite database with comprehensive schema
   - Full CRUD operations
@@ -346,12 +379,13 @@ This section presents a detailed comparison of the existing codebase and functio
   - Query and filtering capabilities
   - Clear/reset functionality (`clear_all()`)
   - Migration history tracking (migrated_path, migrated_at fields)
-- ✅ **Session Management**: 
+- ✅ **Session Management**:
   - Path persistence via `config_store.py`
   - Database persists across restarts
   - Session clearing endpoint implemented
 
 **Code References:**
+
 - `backend/database.py` - Complete database implementation
 - `backend/config_store.py` - Path persistence
 - `backend/api.py:608-617` - Session clearing endpoint
@@ -359,6 +393,7 @@ This section presents a detailed comparison of the existing codebase and functio
 #### Feature 12: Power User Mode and Debug Functionality
 
 **PRD Requirements:**
+
 - Power User Mode activation toggle
 - LLM prompt and response viewing (expandable debug section)
 - Classification trace (step-by-step process)
@@ -370,6 +405,7 @@ This section presents a detailed comparison of the existing codebase and functio
 - Database management tools
 
 **Current Implementation:**
+
 - ❌ **Not Implemented**: No power user mode found
   - No power user toggle in UI
   - No debug sections in PreviewPanel
@@ -379,6 +415,7 @@ This section presents a detailed comparison of the existing codebase and functio
   - No advanced configuration UI
 
 **Code References:**
+
 - None - Feature not implemented
 
 ## Proposed Completion Plan
@@ -392,12 +429,14 @@ The remaining work will be divided into four focused iterations, each with clear
 #### Iteration 1: Core AI Integration and Testing Infrastructure (Weeks 1-3)
 
 **Goals:**
+
 - Enable AI model integration (Nexa SDK)
 - Implement comprehensive testing framework
 - Fix critical classification gaps
 - Establish code quality baseline
 
 **Deliverables:**
+
 1. **AI Model Integration**
    - Fix Nexa SDK integration issues
    - Enable Llama3.2 3B for text classification
@@ -419,6 +458,7 @@ The remaining work will be divided into four focused iterations, each with clear
    - Improve confidence scoring accuracy
 
 **Success Criteria:**
+
 - AI models successfully classify files with 70%+ accuracy [Illustrative]
 - Test suite runs successfully with 60%+ coverage
 - All supported file types can be processed
@@ -429,12 +469,14 @@ The remaining work will be divided into four focused iterations, each with clear
 #### Iteration 2: Power User Features and Taxonomy Management (Weeks 4-5)
 
 **Goals:**
+
 - Implement Power User Mode
 - Build taxonomy management UI
 - Create category proposal workflow
 - Enhance review workflow with debug features
 
 **Deliverables:**
+
 1. **Power User Mode**
    - Add power user toggle in settings
    - Implement debug panel in PreviewPanel
@@ -456,6 +498,7 @@ The remaining work will be divided into four focused iterations, each with clear
    - Implement Misc items review view
 
 **Success Criteria:**
+
 - Power user mode fully functional with all debug features
 - Category proposal workflow guides users through 7 steps
 - Taxonomy viewer displays full four-level spine structure
@@ -466,12 +509,14 @@ The remaining work will be divided into four focused iterations, each with clear
 #### Iteration 3: Enhanced Classification and Edge Cases (Weeks 6-7)
 
 **Goals:**
+
 - Improve classification accuracy
 - Handle edge cases and error scenarios
 - Enhance bulk operations
 - Complete migration features
 
 **Deliverables:**
+
 1. **Classification Improvements**
    - Refine AI prompts for better accuracy
    - Improve heuristic rules
@@ -499,6 +544,7 @@ The remaining work will be divided into four focused iterations, each with clear
    - Add option to open destination folder after migration
 
 **Success Criteria:**
+
 - Classification accuracy improves to 85%+ [Illustrative]
 - All edge cases handled gracefully
 - Bulk operations fully functional
@@ -509,12 +555,14 @@ The remaining work will be divided into four focused iterations, each with clear
 #### Iteration 4: Polish, Performance, and Documentation (Weeks 8-9)
 
 **Goals:**
+
 - Performance optimization
 - UI/UX polish
 - Comprehensive documentation
 - Final testing and bug fixes
 
 **Deliverables:**
+
 1. **Performance Optimization**
    - Optimize database queries
    - Implement pagination for large result sets
@@ -544,6 +592,7 @@ The remaining work will be divided into four focused iterations, each with clear
    - Security testing
 
 **Success Criteria:**
+
 - Application meets performance benchmarks (5-10 files/minute classification) [Illustrative]
 - All documentation complete and reviewed
 - Test coverage at 80%+
@@ -559,6 +608,7 @@ Automated testing is critical for ensuring code quality, preventing regressions,
 #### Testing Framework Setup
 
 **Backend Testing:**
+
 - **Framework**: pytest with pytest-asyncio for FastAPI endpoints
 - **Coverage Tool**: pytest-cov targeting 80%+ coverage
 - **Test Types**:
@@ -567,6 +617,7 @@ Automated testing is critical for ensuring code quality, preventing regressions,
   - Functional tests derived from PRD requirements
 
 **Frontend Testing:**
+
 - **Framework**: Vitest with React Testing Library
 - **Coverage Tool**: @vitest/coverage-v8
 - **Test Types**:
@@ -577,30 +628,35 @@ Automated testing is critical for ensuring code quality, preventing regressions,
 #### Test Implementation Plan
 
 **Phase 1: Foundation (Iteration 1)**
+
 - Set up testing frameworks and configuration
 - Create test fixtures and utilities
 - Implement basic unit tests for core modules
 - Achieve 60% code coverage baseline
 
 **Phase 2: API Testing (Iteration 1)**
+
 - Test all FastAPI endpoints
 - Test error handling and edge cases
 - Test database operations
 - Test file operations
 
 **Phase 3: Component Testing (Iteration 2)**
+
 - Test all React components
 - Test user interactions
 - Test state management
 - Test API integration
 
 **Phase 4: Functional Testing (Iteration 3)**
+
 - Generate functional tests from PRD using PRD parser
 - Implement BDD-style tests for all 12 features
 - Test end-to-end workflows
 - Test taxonomy compliance
 
 **Phase 5: Performance and Security (Iteration 4)**
+
 - Performance tests for large file sets
 - Security tests (input validation, path traversal, SQL injection)
 - Load testing
@@ -625,6 +681,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 **Participants**: 5-10 users representing target personas (Knowledge Worker, Privacy-Conscious User, Casual User) [Illustrative]
 
 **Process**:
+
 - Users provide real file collections (100-500 files each)
 - System classifies files using AI models
 - Users review classifications and mark correct/incorrect
@@ -633,6 +690,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 - Iterate on prompts and heuristics based on feedback
 
 **Key Metrics**:
+
 - First-pass approval rate
 - Classification accuracy by file type
 - Confidence score correlation with user approval
@@ -645,6 +703,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 **Participants**: 3-5 power users [Illustrative]
 
 **Process**:
+
 - Users attempt to propose new categories using 7-step workflow
 - Measure time to complete proposal
 - Identify confusion points in workflow
@@ -652,6 +711,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 - Validate taxonomy structure clarity
 
 **Key Metrics**:
+
 - Time to complete category proposal
 - Success rate of proposals
 - User comprehension of governance rules
@@ -664,6 +724,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 **Participants**: 5-8 users across all personas [Illustrative]
 
 **Process**:
+
 - Users complete full workflow (Scan → Classify → Review → Migrate)
 - Observe user interactions and identify pain points
 - Measure task completion times
@@ -671,6 +732,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 - Test on different screen sizes and platforms
 
 **Key Metrics**:
+
 - Task completion time
 - Error rate
 - User satisfaction score
@@ -683,6 +745,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 **Participants**: 3-5 users with test file collections [Illustrative]
 
 **Process**:
+
 - Users test migration with various file types and structures
 - Verify file integrity after migration
 - Test conflict resolution
@@ -690,6 +753,7 @@ HITL testing ensures that the application meets user needs, provides excellent u
 - Test rollback capabilities (if implemented)
 
 **Key Metrics**:
+
 - File integrity rate (100% target)
 - Metadata preservation rate
 - Conflict resolution success rate
@@ -772,6 +836,7 @@ This section outlines the resources required to execute the completion plan, inc
 ### Personnel Requirements
 
 **Development Team:**
+
 - **1 Full-Stack Developer** (Python/FastAPI backend, React/TypeScript frontend)
   - Primary responsibility: Feature implementation
   - Estimated time: 100% allocation for 9-10 weeks
@@ -781,6 +846,7 @@ This section outlines the resources required to execute the completion plan, inc
   - Estimated time: 50% allocation for 9-10 weeks
 
 **HITL Testing Participants:**
+
 - **5-10 End Users** (Ad-hoc participation) [Illustrative]
   - Knowledge Workers: 3-5 participants
   - Privacy-Conscious Users: 2-3 participants
@@ -789,6 +855,7 @@ This section outlines the resources required to execute the completion plan, inc
   - Estimated time: 2-4 hours per participant per testing session
 
 **Documentation:**
+
 - **Technical Writer** (Part-time, 25% allocation) [Illustrative]
   - Primary responsibility: User documentation, API documentation
   - Estimated time: 25% allocation during Iteration 4
@@ -796,37 +863,42 @@ This section outlines the resources required to execute the completion plan, inc
 ### Tools and Infrastructure
 
 **Development Tools:**
+
 - **IDE**: Cursor IDE (current development environment)
 - **Version Control**: Git with GitHub repository
 - **CI/CD**: GitHub Actions (already configured)
-- **Package Management**: 
+- **Package Management**:
   - Python: pip with requirements.txt
   - Node.js: npm with package.json
 
 **Testing Tools:**
+
 - **Backend**: pytest, pytest-asyncio, pytest-cov, pytest-mock, httpx
 - **Frontend**: Vitest, React Testing Library, @vitest/coverage-v8
 - **Coverage**: Codecov for coverage reporting
 - **E2E Testing**: (Optional) Playwright or Cypress for end-to-end tests
 
 **AI/ML Infrastructure:**
+
 - **Nexa SDK**: Local AI model inference (already integrated, needs fixing)
 - **Model Storage**: Local storage for AI models (Llama3.2 3B, LLaVA-v1.6)
-- **Hardware Requirements**: 
+- **Hardware Requirements**:
   - Minimum: 8GB RAM, CPU-only inference
   - Recommended: 16GB+ RAM, GPU support (Metal/CUDA) for faster inference
 
 **Development Infrastructure:**
-- **Development Machines**: 
+
+- **Development Machines**:
   - macOS, Windows, or Linux development environment
   - Python 3.12+ installed
   - Node.js 18+ installed
-- **Testing Environments**: 
+- **Testing Environments**:
   - Local development environment
   - CI/CD pipeline (GitHub Actions)
   - Cross-platform testing (Windows, macOS, Linux VMs or physical machines)
 
 **Documentation Tools:**
+
 - **Markdown**: For technical documentation (already in use)
 - **API Documentation**: FastAPI automatic docs (Swagger UI) + manual documentation
 - **User Guide**: Markdown or PDF format
@@ -838,6 +910,7 @@ This section outlines the resources required to execute the completion plan, inc
 **Issue**: Nexa SDK integration currently disabled due to crashes. Fixing this may require significant debugging and potentially SDK updates.
 
 **Mitigation**:
+
 - Allocate extra time in Iteration 1 for AI integration
 - Maintain simple keyword-based fallback as backup
 - Engage with Nexa SDK community for support
@@ -848,6 +921,7 @@ This section outlines the resources required to execute the completion plan, inc
 **Issue**: Comprehensive testing requires significant time investment, and HITL testing participants may be limited.
 
 **Mitigation**:
+
 - Prioritize automated testing to reduce manual testing burden
 - Use synthetic test data for initial testing
 - Recruit HITL participants early (during Iteration 1)
@@ -858,6 +932,7 @@ This section outlines the resources required to execute the completion plan, inc
 **Issue**: Testing on Windows, macOS, and Linux requires access to multiple platforms or VMs.
 
 **Mitigation**:
+
 - Use CI/CD pipeline for automated cross-platform testing
 - Prioritize primary development platform (macOS) for initial testing
 - Use cloud-based testing services if needed
@@ -868,6 +943,7 @@ This section outlines the resources required to execute the completion plan, inc
 **Issue**: Testing with 1000+ files may reveal performance issues that require optimization.
 
 **Mitigation**:
+
 - Implement pagination and lazy loading early
 - Use performance profiling tools
 - Test with progressively larger file sets
@@ -878,6 +954,7 @@ This section outlines the resources required to execute the completion plan, inc
 **Issue**: Comprehensive documentation requires significant time investment.
 
 **Mitigation**:
+
 - Start documentation early (during feature development)
 - Use automated API documentation where possible
 - Prioritize user-facing documentation
@@ -886,17 +963,20 @@ This section outlines the resources required to execute the completion plan, inc
 ### Budget Considerations
 
 **Development Costs:**
+
 - Developer time: [Illustrative] 9-10 weeks at full allocation
 - QA/Test Engineer: [Illustrative] 9-10 weeks at 50% allocation
 - Technical Writer: [Illustrative] 2 weeks at 25% allocation during Iteration 4
 
 **Infrastructure Costs:**
+
 - Development tools: Open source (no cost)
 - CI/CD: GitHub Actions (free tier sufficient)
 - Cloud testing (if needed): [Illustrative] Minimal cost
 - AI model storage: Local storage (no cloud costs)
 
 **HITL Testing Costs:**
+
 - Participant compensation: [Illustrative] Optional, depends on recruitment strategy
 - Testing environment setup: Minimal (uses existing infrastructure)
 
@@ -907,6 +987,7 @@ This section outlines the resources required to execute the completion plan, inc
 The Enhanced File Organizer project has made significant progress, with core functionality largely implemented. The current state assessment reveals that **7 out of 12 features are mostly or fully complete**, with **3 features partially implemented** and **2 features not yet started**.
 
 The primary gaps are:
+
 1. **AI Model Integration**: Currently disabled, needs to be fixed and enabled
 2. **Power User Mode**: Not implemented, required for advanced features
 3. **Taxonomy Management UI**: Basic structure exists, but management interface missing
@@ -916,9 +997,3 @@ The primary gaps are:
 The proposed completion plan addresses these gaps through four focused iterations over 9-10 weeks, incorporating comprehensive automated testing and HITL validation. The plan is realistic, accounts for potential challenges, and provides clear milestones for tracking progress.
 
 With proper resource allocation and execution of this plan, the Enhanced File Organizer can achieve full PRD compliance and production readiness within the specified timeline.
-
-
-
-
-
-

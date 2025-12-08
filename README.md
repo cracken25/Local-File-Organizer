@@ -51,11 +51,24 @@ After:
 
 ## Updates 🚀
 
+**[2024/12] v0.1.0**:
+
+* **Web-based deployment**: Application now runs as a web server on port 8765
+* **Taxonomy Editor**: Complete visual interface for managing KB namespace taxonomy
+* **Admin Dashboard**: Centralized access to administrative tools at `/admin`
+* **LLM Engine Integration**: Abstraction layer supporting Ollama (Llama 3.2 Vision 11B)
+* **Enhanced Taxonomy**: LLM classification context and naming conventions per scope
+* **Multi-page application**: Main app (`/`), Admin (`/admin`), Taxonomy Editor (`/taxonomy-editor`)
+* **CRUD operations**: Full create, read, update, delete capabilities for taxonomy management
+* **YAML export/import**: Download and validate taxonomy files
+* **Improved classification**: Taxonomy-aware prompts with confidence scoring and reasoning
+
 **[2024/09] v0.0.2**:
+
 * Featured by [Nexa Gallery](https://nexaai.com/gallery) and [Nexa SDK Cookbook](https://github.com/NexaAI/nexa-sdk/tree/main/examples)!
 * Dry Run Mode: check sorting results before committing changes
 * Silent Mode: save all logs to a txt file for quieter operation
-* Added file support:  `.md`, .`excel`, `.ppt`, and `.csv` 
+* Added file support:  `.md`, .`excel`, `.ppt`, and `.csv`
 * Three sorting options: by content, by date, and by type
 * The default text model is now [Llama3.2 3B](https://nexaai.com/meta/Llama3.2-3B-Instruct/gguf-q3_K_M/file)
 * Improved CLI interaction experience
@@ -63,49 +76,46 @@ After:
 
 Please update the project by deleting the original project folder and reinstalling the requirements. Refer to the installation guide from Step 4.
 
-
 ## Roadmap 📅
 
-- [ ] Copilot Mode: chat with AI to tell AI how you want to sort the file (ie. read and rename all the PDFs)
-- [ ] Change models with CLI 
-- [ ] ebook format support
-- [ ] audio file support
-- [ ] video file support
-- [ ] Implement best practices like Johnny Decimal
-- [ ] Check file duplication
-- [ ] Dockerfile for easier installation
-- [ ] People from [Nexa](https://github.com/NexaAI/nexa-sdk) is helping me to make executables for macOS, Linux and Windows
+* [ ] Copilot Mode: chat with AI to tell AI how you want to sort the file (ie. read and rename all the PDFs)
+* [ ] Change models with CLI
+* [ ] ebook format support
+* [ ] audio file support
+* [ ] video file support
+* [ ] Implement best practices like Johnny Decimal
+* [ ] Check file duplication
+* [ ] Dockerfile for easier installation
+* [ ] People from [Nexa](https://github.com/NexaAI/nexa-sdk) is helping me to make executables for macOS, Linux and Windows
 
 ## What It Does 🔍
 
 This intelligent file organizer harnesses the power of advanced AI models, including language models (LMs) and vision-language models (VLMs), to automate the process of organizing files by:
 
-
 * Scanning a specified input directory for files.
-* Content Understanding: 
-  - **Textual Analysis**: Uses the [Llama3.2 3B](https://nexaai.com/meta/Llama3.2-3B-Instruct/gguf-q3_K_M/file) to analyze and summarize text-based content, generating relevant descriptions and filenames.
-  - **Visual Content Analysis**: Uses the [LLaVA-v1.6](https://nexaai.com/liuhaotian/llava-v1.6-vicuna-7b/gguf-q4_0/file) , based on Vicuna-7B, to interpret visual files such as images, providing context-aware categorization and descriptions.
+* Content Understanding:
+  * **Textual Analysis**: Uses the [Llama3.2 3B](https://nexaai.com/meta/Llama3.2-3B-Instruct/gguf-q3_K_M/file) to analyze and summarize text-based content, generating relevant descriptions and filenames.
+  * **Visual Content Analysis**: Uses the [LLaVA-v1.6](https://nexaai.com/liuhaotian/llava-v1.6-vicuna-7b/gguf-q4_0/file) , based on Vicuna-7B, to interpret visual files such as images, providing context-aware categorization and descriptions.
 
 * Understanding the content of your files (text, images, and more) to generate relevant descriptions, folder names, and filenames.
 * Organizing the files into a new directory structure based on the generated metadata.
 
 The best part? All AI processing happens 100% on your local device using the [Nexa SDK](https://github.com/NexaAI/nexa-sdk). No internet connection required, no data leaves your computer, and no AI API is needed - keeping your files completely private and secure.
 
-
 ## Supported File Types 📁
 
-- **Images:** `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`
-- **Text Files:** `.txt`, `.docx`, `.md`
-- **Spreadsheets:** `.xlsx`, `.csv`
-- **Presentations:** `.ppt`, `.pptx`
-- **PDFs:** `.pdf`
+* **Images:** `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`
+* **Text Files:** `.txt`, `.docx`, `.md`
+* **Spreadsheets:** `.xlsx`, `.csv`
+* **Presentations:** `.ppt`, `.pptx`
+* **PDFs:** `.pdf`
 
 ## Prerequisites 💻
 
-- **Operating System:** Compatible with Windows, macOS, and Linux.
-- **Python Version:** Python 3.12
-- **Conda:** Anaconda or Miniconda installed.
-- **Git:** For cloning the repository (or you can download the code as a ZIP file).
+* **Operating System:** Compatible with Windows, macOS, and Linux.
+* **Python Version:** Python 3.12
+* **Conda:** Anaconda or Miniconda installed.
+* **Git:** For cloning the repository (or you can download the code as a ZIP file).
 
 ## Installation 🛠
 
@@ -146,28 +156,35 @@ conda activate local_file_organizer
 ### 4. Install Nexa SDK ️
 
 #### CPU Installation
+
 To install the CPU version of Nexa SDK, run:
+
 ```bash
 pip install nexaai --prefer-binary --index-url https://nexaai.github.io/nexa-sdk/whl/cpu --extra-index-url https://pypi.org/simple --no-cache-dir
 ```
 
 #### GPU Installation (Metal - macOS)
+
 For the GPU version supporting Metal (macOS), run:
+
 ```bash
 CMAKE_ARGS="-DGGML_METAL=ON -DSD_METAL=ON" pip install nexaai --prefer-binary --index-url https://nexaai.github.io/nexa-sdk/whl/metal --extra-index-url https://pypi.org/simple --no-cache-dir
 ```
+
 For detailed installation instructions of Nexa SDK for **CUDA** and **AMD GPU** support, please refer to the [Installation section](https://github.com/NexaAI/nexa-sdk?tab=readme-ov-file#installation) in the main README.
 
-
-### 5. Install Dependencies 
+### 5. Install Dependencies
 
 1. Ensure you are in the project directory:
+
    ```zsh
    cd path/to/Local-File-Organizer
    ```
+
    Replace `path/to/Local-File-Organizer` with the actual path where you cloned or extracted the project.
 
 2. Install the required dependencies:
+
    ```zsh
    pip install -r requirements.txt
    ```
@@ -178,37 +195,44 @@ For detailed installation instructions of Nexa SDK for **CUDA** and **AMD GPU** 
 pip install nexa Pillow pytesseract PyMuPDF python-docx
 ```
 
-With the environment activated and dependencies installed, run the script using:
+With the environment activated and dependencies installed, run the web server:
 
-### 6. Running the Script🎉
+### 6. Running the Application 🎉
+
 ```zsh
-python main.py
+python3 run_server.py
 ```
+
+Then open your browser and navigate to:
+* **Main Application**: `http://localhost:8765`
+* **Admin Tools**: `http://localhost:8765/admin`
+* **Taxonomy Editor**: `http://localhost:8765/taxonomy-editor`
+
+The application will be accessible in your browser with a modern web interface for scanning, classifying, reviewing, and migrating files.
 
 ## Notes
 
-- **SDK Models:**
-  - The script uses `NexaVLMInference` and `NexaTextInference` models [usage](https://docs.nexaai.com/sdk/python-interface/gguf).
-  - Ensure you have access to these models and they are correctly set up.
-  - You may need to download model files or configure paths.
+* **SDK Models:**
+  * The script uses `NexaVLMInference` and `NexaTextInference` models [usage](https://docs.nexaai.com/sdk/python-interface/gguf).
+  * Ensure you have access to these models and they are correctly set up.
+  * You may need to download model files or configure paths.
 
+* **Dependencies:**
+  * **pytesseract:** Requires Tesseract OCR installed on your system.
+    * **macOS:** `brew install tesseract`
+    * **Ubuntu/Linux:** `sudo apt-get install tesseract-ocr`
+    * **Windows:** Download from [Tesseract OCR Windows Installer](https://github.com/UB-Mannheim/tesseract/wiki)
+  * **PyMuPDF (fitz):** Used for reading PDFs.
 
-- **Dependencies:**
-  - **pytesseract:** Requires Tesseract OCR installed on your system.
-    - **macOS:** `brew install tesseract`
-    - **Ubuntu/Linux:** `sudo apt-get install tesseract-ocr`
-    - **Windows:** Download from [Tesseract OCR Windows Installer](https://github.com/UB-Mannheim/tesseract/wiki)
-  - **PyMuPDF (fitz):** Used for reading PDFs.
+* **Processing Time:**
+  * Processing may take time depending on the number and size of files.
+  * The script uses multiprocessing to improve performance.
 
-- **Processing Time:**
-  - Processing may take time depending on the number and size of files.
-  - The script uses multiprocessing to improve performance.
-
-- **Customizing Prompts:**
-  - You can adjust prompts in `data_processing.py` to change how metadata is generated.
+* **Customizing Prompts:**
+  * You can adjust prompts in `data_processing.py` to change how metadata is generated.
 
 ## License
 
 This project is dual-licensed under the MIT License and Apache 2.0 License. You may choose which license you prefer to use for this project.
 
-- See the [MIT License](LICENSE-MIT) for more details.
+* See the [MIT License](LICENSE-MIT) for more details.

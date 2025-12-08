@@ -21,6 +21,18 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from api import app
 from database import Database
 
+# Import AnythingLLM fixtures
+from tests.fixtures.allm_fixtures import (
+    sample_allm_responses,
+    mock_allm_api_response,
+    mock_allm_workspace,
+    mock_allm_client,
+    sample_taxonomy_data,
+    mock_requests_post,
+    allm_test_env_vars,
+    sample_classification_request
+)
+
 @pytest.fixture
 def client():
     """Create a test client for the FastAPI app."""

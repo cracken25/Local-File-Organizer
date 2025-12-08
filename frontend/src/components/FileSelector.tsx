@@ -11,7 +11,7 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
   const [inputPath, setInputPath] = useState('');
   const [outputPath, setOutputPath] = useState('');
   const [mode, setMode] = useState<'content' | 'date' | 'type'>('content');
-  
+
   // Refs to directly access input elements
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLInputElement>(null);
@@ -19,12 +19,12 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
   // Load saved paths from API on mount
   useEffect(() => {
     console.log('=== LOADING SAVED PATHS FROM SERVER ===');
-    
+
     const loadSavedPaths = async () => {
       try {
         const savedPaths = await apiClient.getSavedPaths();
         console.log('Retrieved saved paths:', savedPaths);
-        
+
         if (savedPaths.input_path) {
           console.log('Setting inputPath to:', savedPaths.input_path);
           setInputPath(savedPaths.input_path);
@@ -32,7 +32,7 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
             inputRef.current.value = savedPaths.input_path;
           }
         }
-        
+
         if (savedPaths.output_path) {
           console.log('Setting outputPath to:', savedPaths.output_path);
           setOutputPath(savedPaths.output_path);
@@ -40,18 +40,18 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
             outputRef.current.value = savedPaths.output_path;
           }
         }
-        
+
         if (savedPaths.mode && (savedPaths.mode === 'content' || savedPaths.mode === 'date' || savedPaths.mode === 'type')) {
           console.log('Setting mode to:', savedPaths.mode);
           setMode(savedPaths.mode as 'content' | 'date' | 'type');
         }
-        
+
         console.log('=== FINISHED LOADING PATHS ===');
       } catch (error) {
         console.error('Error loading saved paths:', error);
       }
     };
-    
+
     loadSavedPaths();
   }, []);
 
@@ -59,7 +59,7 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
   useEffect(() => {
     console.log('inputPath state changed to:', inputPath);
     if (inputPath) {
-      apiClient.savePaths({ input_path: inputPath }).catch(err => 
+      apiClient.savePaths({ input_path: inputPath }).catch(err =>
         console.error('Error saving input path:', err)
       );
     }
@@ -91,56 +91,6 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
     }
   }, [mode]);
 
-  const handleBrowseInput = async () => {
-    console.log('Browse input clicked');
-    console.log('Current inputPath state:', inputPath);
-    try {
-      // Check if PyWebView API is available
-      if (window.pywebview?.api?.select_folder) {
-        console.log('Calling select_folder...');
-        const path = await window.pywebview.api.select_folder('Select Input Directory');
-        console.log('Returned path:', path, 'Type:', typeof path);
-        if (path && path !== null && path !== 'null' && path !== '') {
-          console.log('Setting input path to:', path);
-          setInputPath(path);
-        } else {
-          console.log('No valid path selected (got:', path, ')');
-        }
-      } else {
-        console.error('PyWebView API not available');
-        alert('Folder picker not available. Please enter path manually or ensure you\'re running the desktop app.');
-      }
-    } catch (error) {
-      console.error('Browse error:', error);
-      alert('Error opening folder picker. Please enter path manually.');
-    }
-  };
-
-  const handleBrowseOutput = async () => {
-    console.log('Browse output clicked');
-    console.log('Current outputPath state:', outputPath);
-    try {
-      // Check if PyWebView API is available
-      if (window.pywebview?.api?.select_folder) {
-        console.log('Calling select_folder...');
-        const path = await window.pywebview.api.select_folder('Select Output Directory');
-        console.log('Returned path:', path, 'Type:', typeof path);
-        if (path && path !== null && path !== 'null' && path !== '') {
-          console.log('Setting output path to:', path);
-          setOutputPath(path);
-        } else {
-          console.log('No valid path selected (got:', path, ')');
-        }
-      } else {
-        console.error('PyWebView API not available');
-        alert('Folder picker not available. Please enter path manually or ensure you\'re running the desktop app.');
-      }
-    } catch (error) {
-      console.error('Browse error:', error);
-      alert('Error opening folder picker. Please enter path manually.');
-    }
-  };
-
   const scanMutation = useMutation({
     mutationFn: apiClient.scan.bind(apiClient),
     onSuccess: () => {
@@ -170,32 +120,23 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Input Directory
         </label>
-        <div className="flex space-x-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={inputPath}
-            onChange={(e) => setInputPath(e.target.value)}
-            placeholder="/path/to/your/files"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            style={{ color: '#000', backgroundColor: '#fff' }}
-            required
-          />
-          <button
-            type="button"
-            onClick={handleBrowseInput}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
-          >
-            Browse...
-          </button>
-        </div>
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputPath}
+          onChange={(e) => setInputPath(e.target.value)}
+          placeholder="/path/to/your/files"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          style={{ color: '#000', backgroundColor: '#fff' }}
+          required
+        />
         {inputPath && (
           <p className="mt-1 text-xs text-green-600 font-mono">
             Selected: {inputPath}
           </p>
         )}
         <p className="mt-1 text-sm text-gray-500">
-          Click Browse to select a folder, or enter the full path
+          Enter the full path to the directory you want to organize
         </p>
       </div>
 
@@ -203,31 +144,22 @@ export default function FileSelector({ onScanComplete, onClassifyStart }: FileSe
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Output Directory (optional)
         </label>
-        <div className="flex space-x-2">
-          <input
-            ref={outputRef}
-            type="text"
-            value={outputPath}
-            onChange={(e) => setOutputPath(e.target.value)}
-            placeholder="/path/to/output (default: organized_folder)"
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            style={{ color: '#000', backgroundColor: '#fff' }}
-          />
-          <button
-            type="button"
-            onClick={handleBrowseOutput}
-            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
-          >
-            Browse...
-          </button>
-        </div>
+        <input
+          ref={outputRef}
+          type="text"
+          value={outputPath}
+          onChange={(e) => setOutputPath(e.target.value)}
+          placeholder="/path/to/output (default: organized_folder)"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          style={{ color: '#000', backgroundColor: '#fff' }}
+        />
         {outputPath && (
           <p className="mt-1 text-xs text-green-600 font-mono">
             Selected: {outputPath}
           </p>
         )}
         <p className="mt-1 text-sm text-gray-500">
-          Click Browse to select a folder, or leave empty for default
+          Enter the full path or leave empty for default location
         </p>
       </div>
 

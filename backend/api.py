@@ -65,7 +65,6 @@ llm_engine = None  # Initialize lazily or on startup
 # classifier = None # Removed old classifier
 # image_inference = None # Removed old inference
 # text_inference = None # Removed old inference
-webview_window = None
 current_session = {
     'input_path': None,
     'output_path': None,
@@ -454,34 +453,6 @@ async def get_preview(item_id: str):
     }
 
 
-@api_router.post("/browse/folder")
-async def browse_folder(request: dict):
-    """
-    Trigger native folder selection dialog through PyWebView.
-    Returns the selected folder path.
-    """
-    import webview
-    
-    title = request.get('title', 'Select Folder')
-    
-    try:
-        # Try to use webview if available
-        if webview.windows:
-            window = webview.windows[0]
-            result = window.create_file_dialog(
-                webview.FOLDER_DIALOG,
-                directory='',
-                allow_multiple=False
-            )
-            if result and len(result) > 0:
-                return {"path": result[0], "success": True}
-        
-        return {"path": None, "success": False, "error": "No webview window available"}
-    
-    except Exception as e:
-        return {"path": None, "success": False, "error": str(e)}
-
-
 @api_router.delete("/session")
 async def clear_session():
     """Clear current session and database."""
@@ -516,8 +487,49 @@ async def save_config_paths(data: dict):
     return {"success": success, "message": "Paths saved" if success else "Failed to save paths"}
 
 
-# Include API router with /api prefix
+# Include all API routes
 app.include_router(api_router, prefix="/api")
+
+# Serve admin.html and taxonomy-editor.html
+@app.get("/admin")
+async def serve_admin():
+    """Serve the admin tools page."""
+    admin_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'admin.html')
+    if os.path.exists(admin_path):
+        return FileResponse(admin_path)
+    raise HTTPException(status_code=404, detail="Admin page not found")
+
+@app.get("/taxonomy-editor")
+async def serve_taxonomy_editor():
+    """Serve the taxonomy editor page."""
+    editor_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'taxonomy-editor.html')
+    if os.path.exists(editor_path):
+        return FileResponse(editor_path)
+    raise HTTPException(status_code=404, detail="Taxonomy editor not found")
+
+# Serve static files for taxonomy editor
+@app.get("/taxonomy-editor.css")
+async def serve_taxonomy_css():
+    css_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'taxonomy-editor.css')
+    if os.path.exists(css_path):
+        return FileResponse(css_path, media_type="text/css")
+    raise HTTPException(status_code=404)
+
+@app.get("/taxonomy-editor.js")
+async def serve_taxonomy_js():
+    js_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'taxonomy-editor.js')
+    if os.path.exists(js_path):
+        return FileResponse(js_path, media_type="application/javascript")
+    raise HTTPException(status_code=404)
+
+# Serve backend/taxonomy.yaml for taxonomy editor
+@app.get("/backend/taxonomy.yaml")
+async def serve_taxonomy_yaml():
+    """Serve the taxonomy YAML file."""
+    yaml_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'taxonomy.yaml')
+    if os.path.exists(yaml_path):
+        return FileResponse(yaml_path, media_type="application/x-yaml")
+    raise HTTPException(status_code=404, detail="Taxonomy YAML not found")
 
 
 # Startup event
@@ -538,20 +550,10 @@ async def shutdown_event():
 
 # Catch-all route for SPA (must be last)
 @app.get("/{full_path:path}")
-async def serve_spa_catchall(full_path: str):
-    """Serve SPA for all non-API routes."""
+async def serve_react_app(full_path: str):
+    """Serve the React app for all other routes."""
     frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frontend', 'dist')
-    
-    # Check if it's a file request
-    file_path = os.path.join(frontend_dist, full_path)
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return FileResponse(file_path)
-    
-    # Otherwise serve index.html for SPA routing
     index_path = os.path.join(frontend_dist, 'index.html')
     if os.path.exists(index_path):
         return FileResponse(index_path)
-    
-    # Fallback
-    raise HTTPException(status_code=404, detail="Not found")
-
+    return {"message": "Frontend not built. Run 'npm run build' in the frontend directory."}
